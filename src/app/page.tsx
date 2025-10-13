@@ -1,13 +1,17 @@
 import Hero from "@/components/home/Hero";
-import Features from "@/components/home/Features";
-import Services from "@/components/home/Services";
+import Benefits from "@/components/home/Benefits";
+import Categories from "@/components/home/Categories";
+import About from "@/components/home/About";
+import WholesaleCTA from "@/components/home/WholesaleCTA";
 
 export default function HomePage() {
   return (
     <main>
       <Hero />
-      <Features />
-      <Services />
+      <Benefits />
+      <Categories />
+      <About />
+      <WholesaleCTA />
     </main>
   );
 }

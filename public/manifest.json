@@ -1,24 +1,27 @@
 {
-  "name": "Guía Nacional de Camiones Atmosféricos",
-  "short_name": "Guía C.A",
+  "name": "xyntral - Soportes para dispositivos",
+  "short_name": "xyntral",
+  "description": "Tecnología útil y funcional. Soportes de calidad para celulares, tablets y notebooks.",
   "start_url": "/",
-  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "theme_color": "#ffffff",
   "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/favicon/web-app-manifest-192x192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
-      "src": "/favicon/web-app-manifest-512x512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["shopping", "lifestyle", "utilities"],
+  "lang": "es-AR",
+  "dir": "ltr"
 }

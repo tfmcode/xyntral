@@ -1,398 +1,338 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { Search, MapPin, Menu, X, ChevronDown } from "lucide-react";
-
-type Sugerencia =
-  | { tipo: "provincia"; nombre: string }
-  | { tipo: "localidad"; nombre: string; provincia: string }
-  | { tipo: "servicio"; nombre: string };
+import { usePathname } from "next/navigation";
+import {
+  Search,
+  ShoppingCart,
+  Menu,
+  X,
+  User,
+  ChevronDown,
+  Package,
+} from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const Navbar = () => {
-  const router = useRouter();
-
-  const [busqueda, setBusqueda] = useState("");
-  const [ubicacion, setUbicacion] = useState("");
-  const [provinciaSeleccionada, setProvinciaSeleccionada] = useState("");
-  const [localidadSeleccionada, setLocalidadSeleccionada] = useState("");
-
-  const [sugerencias, setSugerencias] = useState<Sugerencia[]>([]);
-  const [sugerenciasServicios, setSugerenciasServicios] = useState<
-    Sugerencia[]
-  >([]);
-  const [showSugerencias, setShowSugerencias] = useState(false);
+  const pathname = usePathname();
+  const { user } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [showCategorias, setShowCategorias] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
 
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const sugerenciasRef = useRef<HTMLDivElement>(null);
-  const serviciosRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetch("/api/servicios")
-      .then((res) => res.json())
-      .then((data: { nombre: string }[]) => {
-        const sugerencias = data.map((s) => ({
-          tipo: "servicio" as const,
-          nombre: s.nombre,
-        }));
-        setSugerenciasServicios(sugerencias);
-      })
-      .catch((err) => console.error("Error al cargar servicios:", err));
-  }, []);
-
-  const buscarUbicacion = (texto: string) => {
-    if (texto.length < 2) {
-      setSugerencias([]);
-      return;
-    }
-
-    const encoded = encodeURIComponent(texto);
-
-    Promise.all([
-      fetch(
-        `https://apis.datos.gob.ar/georef/api/provincias?nombre=${encoded}&max=5`
-      )
-        .then((res) => res.json())
-        .then((data) =>
-          data.provincias.map((p: { nombre: string }) => ({
-            tipo: "provincia",
-            nombre: p.nombre,
-          }))
-        ),
-      fetch(
-        `https://apis.datos.gob.ar/georef/api/municipios?nombre=${encoded}&max=5&campos=nombre,provincia`
-      )
-        .then((res) => res.json())
-        .then((data) =>
-          data.municipios.map(
-            (m: { nombre: string; provincia: { nombre: string } }) => ({
-              tipo: "localidad",
-              nombre: m.nombre,
-              provincia: m.provincia.nombre,
-            })
-          )
-        ),
-    ]).then(([provincias, localidades]) => {
-      setSugerencias([...provincias, ...localidades]);
-      setShowSugerencias(true);
-    });
-  };
-
-  const handleUbicacionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setUbicacion(value);
-    setShowSugerencias(false);
-    setProvinciaSeleccionada("");
-    setLocalidadSeleccionada("");
-
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      buscarUbicacion(value);
-    }, 300);
-  };
-
-  const handleSelectSugerencia = (sug: Sugerencia) => {
-    if (sug.tipo === "provincia") {
-      setProvinciaSeleccionada(sug.nombre);
-      setLocalidadSeleccionada("");
-      setUbicacion(sug.nombre);
-    } else if (sug.tipo === "localidad") {
-      setProvinciaSeleccionada(sug.provincia);
-      setLocalidadSeleccionada(sug.nombre);
-      setUbicacion(`${sug.nombre}, ${sug.provincia}`);
-    } else if (sug.tipo === "servicio") {
-      setBusqueda(sug.nombre);
-    }
-    setShowSugerencias(false);
-  };
-
-  const handleBuscar = () => {
-    const params = new URLSearchParams();
-    if (busqueda.trim()) params.set("servicio", busqueda.trim());
-    if (provinciaSeleccionada) params.set("provincia", provinciaSeleccionada);
-    if (localidadSeleccionada) params.set("localidad", localidadSeleccionada);
-    params.set("pagina", "1");
-    router.push(`/empresas?${params.toString()}`);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleBuscar();
-    }
-  };
-
-  const toggleMenu = () => setShowMenu((prev) => !prev);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        !sugerenciasRef.current?.contains(event.target as Node) &&
-        !serviciosRef.current?.contains(event.target as Node)
-      ) {
-        setShowSugerencias(false);
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setShowSugerencias(false);
-        setShowMenu(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
+  // Detectar scroll para cambiar estilo
   useEffect(() => {
     const handleScroll = () => {
-      if (showMenu) setShowMenu(false);
+      setScrolled(window.scrollY > 20);
     };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-    if (showMenu) {
-      window.addEventListener("scroll", handleScroll);
-      return () => window.removeEventListener("scroll", handleScroll);
-    }
-  }, [showMenu]);
+  // TODO: Obtener cantidad de items del carrito desde el contexto/API
+  useEffect(() => {
+    // Placeholder - implementar cuando tengamos el contexto del carrito
+    setCartCount(0);
+  }, []);
+
+  const categorias = [
+    { nombre: "Soportes para Celular", slug: "soportes-celular" },
+    { nombre: "Soportes para Tablet", slug: "soportes-tablet" },
+    { nombre: "Soportes para Notebook", slug: "soportes-notebook" },
+    { nombre: "Accesorios", slug: "accesorios" },
+  ];
+
+  const isActive = (path: string) => pathname === path;
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-24 sm:h-28 lg:h-32 items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
-              <div className="relative">
-                <Image
-                  src="/img/LogoGA.png"
-                  alt="Logo de Guía Atmosféricos"
-                  width={80}
-                  height={80}
-                  className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full transition-transform group-hover:scale-105 object-cover"
-                  priority
-                />
-              </div>
-              <div className="flex flex-col">
-                <div className="text-sm sm:text-base lg:text-lg font-bold text-[#1c2e39] leading-tight">
-                  <div>GUÍA DE CAMIONES</div>
-                  <div>ATMOSFÉRICOS</div>
-                </div>
-              </div>
-            </Link>
+    <header
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-white/95 backdrop-blur-md shadow-md"
+          : "bg-white border-b border-gray-200"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Top bar - Solo desktop */}
+        <div className="hidden lg:flex items-center justify-between py-2 text-sm border-b border-gray-100">
+          <div className="flex items-center gap-6 text-gray-600">
+            <span className="flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              Envío gratis desde 2da unidad
+            </span>
+            <span>•</span>
+            <span>Pagos seguros con Mercado Pago</span>
           </div>
-
-          {/* Buscador Desktop */}
-          <div
-            className={`hidden lg:flex items-center transition-all duration-300 ${
-              isSearchFocused ? "scale-105" : ""
-            }`}
-          >
-            <div className="flex items-center bg-gray-50 rounded-xl border-2 border-transparent hover:border-gray-200 focus-within:border-[#1c2e39] focus-within:bg-white transition-all duration-200 shadow-sm">
-              {/* Selector de servicios */}
-              <div className="relative" ref={serviciosRef}>
-                <select
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setIsSearchFocused(false)}
-                  className="w-48 xl:w-56 bg-transparent border-none outline-none px-4 py-4 text-sm text-gray-700 cursor-pointer appearance-none"
-                >
-                  <option value="">¿Qué servicio buscás?</option>
-                  {sugerenciasServicios.map((sug, idx) => (
-                    <option key={idx} value={sug.nombre}>
-                      {sug.nombre}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={16}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                />
-              </div>
-
-              {/* Separador */}
-              <div className="w-px h-10 bg-gray-300"></div>
-
-              {/* Input de ubicación */}
-              <div className="relative" ref={sugerenciasRef}>
-                <div className="flex items-center">
-                  <MapPin size={18} className="ml-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="¿Dónde?"
-                    value={ubicacion}
-                    onChange={handleUbicacionChange}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setIsSearchFocused(false)}
-                    onKeyPress={handleKeyPress}
-                    className="w-44 xl:w-52 bg-transparent border-none outline-none px-3 py-4 text-sm text-gray-700 placeholder-gray-500"
-                  />
-                </div>
-
-                {showSugerencias && sugerencias.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-auto z-50">
-                    {sugerencias.map((sug, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleSelectSugerencia(sug)}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors text-sm border-b border-gray-100 last:border-b-0"
-                      >
-                        <div className="flex items-center gap-2">
-                          <MapPin size={14} className="text-gray-400" />
-                          <span>
-                            {sug.tipo === "provincia"
-                              ? sug.nombre
-                              : sug.tipo === "localidad"
-                              ? `${sug.nombre}, ${sug.provincia}`
-                              : sug.nombre}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Botón buscar */}
-              <button
-                onClick={handleBuscar}
-                className="bg-[#1c2e39] hover:bg-[#15253a] text-white px-6 py-4 rounded-r-xl transition-colors duration-200 flex items-center gap-2 font-medium"
-              >
-                <Search size={20} />
-                <span className="hidden xl:inline">Buscar</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Botones de acción Desktop */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Link
-              href="/login"
-              className="bg-gray-100 hover:bg-gray-200 text-[#1c2e39] px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+              href="/sobre-nosotros"
+              className="text-gray-600 hover:text-blue-600 transition-colors"
             >
-              Iniciar Sesión
+              Sobre Nosotros
             </Link>
             <Link
-              href="/registro"
-              className="bg-[#1c2e39] hover:bg-[#15253a] text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+              href="/preguntas-frecuentes"
+              className="text-gray-600 hover:text-blue-600 transition-colors"
             >
-              Registrá tu Empresa
+              FAQ
             </Link>
           </div>
-
-          {/* Menú móvil toggle */}
-          <button
-            onClick={toggleMenu}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            aria-label={showMenu ? "Cerrar menú" : "Abrir menú"}
-          >
-            {showMenu ? <X size={24} /> : <Menu size={24} />}
-          </button>
         </div>
 
-        {/* Menú móvil desplegable */}
+        {/* Main navbar */}
+        <div className="flex items-center justify-between h-20 lg:h-24">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="text-2xl lg:text-3xl font-extrabold">
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                xyntral
+              </span>
+            </div>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center gap-8">
+            <Link
+              href="/"
+              className={`font-medium transition-colors ${
+                isActive("/")
+                  ? "text-blue-600"
+                  : "text-gray-700 hover:text-blue-600"
+              }`}
+            >
+              Inicio
+            </Link>
+
+            <Link
+              href="/productos"
+              className={`font-medium transition-colors ${
+                isActive("/productos")
+                  ? "text-blue-600"
+                  : "text-gray-700 hover:text-blue-600"
+              }`}
+            >
+              Productos
+            </Link>
+
+            {/* Categorías Dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={() => setShowCategorias(true)}
+              onMouseLeave={() => setShowCategorias(false)}
+            >
+              <button className="flex items-center gap-1 font-medium text-gray-700 hover:text-blue-600 transition-colors">
+                Categorías
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${
+                    showCategorias ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Dropdown Menu */}
+              {showCategorias && (
+                <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 animate-fade-in">
+                  {categorias.map((cat) => (
+                    <Link
+                      key={cat.slug}
+                      href={`/productos?categoria=${cat.slug}`}
+                      className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                    >
+                      {cat.nombre}
+                    </Link>
+                  ))}
+                  <div className="border-t border-gray-100 mt-2 pt-2">
+                    <Link
+                      href="/productos"
+                      className="block px-4 py-3 text-blue-600 font-medium hover:bg-blue-50 transition-colors"
+                    >
+                      Ver todos →
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          </nav>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3 lg:gap-4">
+            {/* Search - Desktop */}
+            <Link
+              href="/productos"
+              className="hidden lg:flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors text-gray-600"
+            >
+              <Search className="w-4 h-4" />
+              <span className="text-sm">Buscar</span>
+            </Link>
+
+            {/* Cart */}
+            <Link
+              href="/carrito"
+              className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Carrito de compras"
+            >
+              <ShoppingCart className="w-6 h-6 text-gray-700" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
+            {/* User Account */}
+            {user ? (
+              <div className="hidden lg:flex items-center gap-2">
+                <Link
+                  href="/cuenta"
+                  className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                  <User className="w-5 h-5 text-gray-700" />
+                  <span className="text-sm font-medium text-gray-700">
+                    Mi Cuenta
+                  </span>
+                </Link>
+              </div>
+            ) : (
+              <div className="hidden lg:flex items-center gap-2">
+                <Link
+                  href="/login"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                >
+                  Iniciar Sesión
+                </Link>
+                <Link
+                  href="/registro"
+                  className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                >
+                  Registrarse
+                </Link>
+              </div>
+            )}
+
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label={showMenu ? "Cerrar menú" : "Abrir menú"}
+            >
+              {showMenu ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
         <div
           className={`lg:hidden transition-all duration-300 ease-in-out ${
             showMenu
-              ? "max-h-[500px] opacity-100 visible pb-6"
+              ? "max-h-[600px] opacity-100 visible pb-6"
               : "max-h-0 opacity-0 invisible overflow-hidden"
           }`}
         >
-          <div className="pt-4 space-y-4">
-            {/* Buscador móvil */}
-            <div className="space-y-3">
-              <div className="relative">
-                <select
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm bg-white focus:border-[#1c2e39] focus:ring-2 focus:ring-[#1c2e39]/20 outline-none appearance-none"
-                >
-                  <option value="">¿Qué servicio buscás?</option>
-                  {sugerenciasServicios.map((sug, idx) => (
-                    <option key={idx} value={sug.nombre}>
-                      {sug.nombre}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={16}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                />
-              </div>
+          <nav className="pt-4 space-y-1">
+            <Link
+              href="/"
+              onClick={() => setShowMenu(false)}
+              className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
+                isActive("/")
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              Inicio
+            </Link>
 
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="¿Dónde?"
-                  value={ubicacion}
-                  onChange={handleUbicacionChange}
-                  onKeyPress={handleKeyPress}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 pl-10 text-sm focus:border-[#1c2e39] focus:ring-2 focus:ring-[#1c2e39]/20 outline-none"
-                />
-                <MapPin
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-                {showSugerencias && sugerencias.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-auto z-50">
-                    {sugerencias.map((sug, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleSelectSugerencia(sug)}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors text-sm border-b border-gray-100 last:border-b-0"
-                      >
-                        <div className="flex items-center gap-2">
-                          <MapPin size={14} className="text-gray-400" />
-                          <span>
-                            {sug.tipo === "provincia"
-                              ? sug.nombre
-                              : sug.tipo === "localidad"
-                              ? `${sug.nombre}, ${sug.provincia}`
-                              : sug.nombre}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+            <Link
+              href="/productos"
+              onClick={() => setShowMenu(false)}
+              className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
+                isActive("/productos")
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              Productos
+            </Link>
 
-              <button
-                onClick={handleBuscar}
-                className="w-full bg-[#1c2e39] text-white py-3 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-[#15253a] transition-colors"
-              >
-                <Search size={18} />
-                Buscar
-              </button>
+            {/* Categorías Mobile */}
+            <div className="px-4 py-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                Categorías
+              </p>
+              <div className="space-y-1 pl-2">
+                {categorias.map((cat) => (
+                  <Link
+                    key={cat.slug}
+                    href={`/productos?categoria=${cat.slug}`}
+                    onClick={() => setShowMenu(false)}
+                    className="block py-2 text-gray-600 hover:text-blue-600 transition-colors"
+                  >
+                    {cat.nombre}
+                  </Link>
+                ))}
+              </div>
             </div>
 
-            {/* Enlaces móvil */}
-            <div className="pt-4 border-t border-gray-200 space-y-3">
-              <Link
-                href="/login"
-                onClick={() => setShowMenu(false)}
-                className="block w-full text-center py-3 border border-[#1c2e39] text-[#1c2e39] rounded-lg font-medium hover:bg-[#1c2e39] hover:text-white transition-colors"
-              >
-                Iniciar Sesión
-              </Link>
-              <Link
-                href="/registro"
-                onClick={() => setShowMenu(false)}
-                className="block w-full text-center py-3 bg-[#1c2e39] text-white rounded-lg font-medium hover:bg-[#15253a] transition-colors"
-              >
-                Registrá tu Empresa
-              </Link>
+            <Link
+              href="/sobre-nosotros"
+              onClick={() => setShowMenu(false)}
+              className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Sobre Nosotros
+            </Link>
+
+            <Link
+              href="/preguntas-frecuentes"
+              onClick={() => setShowMenu(false)}
+              className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              Preguntas Frecuentes
+            </Link>
+
+            {/* User actions mobile */}
+            <div className="pt-4 border-t border-gray-200 space-y-2">
+              {user ? (
+                <>
+                  <Link
+                    href="/cuenta"
+                    onClick={() => setShowMenu(false)}
+                    className="block px-4 py-3 rounded-lg bg-gray-100 text-gray-700 font-medium text-center"
+                  >
+                    Mi Cuenta
+                  </Link>
+                  <Link
+                    href="/cuenta/pedidos"
+                    onClick={() => setShowMenu(false)}
+                    className="block px-4 py-3 rounded-lg text-gray-700 text-center"
+                  >
+                    Mis Pedidos
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setShowMenu(false)}
+                    className="block px-4 py-3 rounded-lg border-2 border-blue-600 text-blue-600 font-medium text-center"
+                  >
+                    Iniciar Sesión
+                  </Link>
+                  <Link
+                    href="/registro"
+                    onClick={() => setShowMenu(false)}
+                    className="block px-4 py-3 rounded-lg bg-blue-600 text-white font-medium text-center"
+                  >
+                    Registrarse
+                  </Link>
+                </>
+              )}
             </div>
-          </div>
+          </nav>
         </div>
       </div>
     </header>

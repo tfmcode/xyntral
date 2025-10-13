@@ -1,21 +1,66 @@
 import React from "react";
 import "./globals.css";
 import type { Metadata } from "next";
-import Script from "next/script";
 import LayoutContent from "@/components/layout/LayoutContent";
 import { AuthProvider } from "@/context/AuthContext";
 import WhatsappFloating from "@/components/ui/WhatsappFloating";
 
 export const metadata: Metadata = {
-  title: "Guía de Camiones Atmosféricos",
+  title: "Xyntral - Soportes para Celular, Tablet y Notebook",
   description:
-    "Conectamos usuarios con empresas de desagote y servicios ambientales.",
+    "Tecnología útil y funcional para tu día a día. Soportes de calidad para todos tus dispositivos. Envío gratis desde la segunda unidad.",
+  keywords: [
+    "soportes celular",
+    "soportes tablet",
+    "soportes notebook",
+    "accesorios tecnología",
+    "soporte magnético auto",
+    "elevador notebook",
+    "base refrigerante",
+  ],
+  authors: [{ name: "xyntral" }],
+  creator: "xyntral",
+  publisher: "xyntral",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
     apple: "/apple-icon.png",
   },
   manifest: "/manifest.json",
+  openGraph: {
+    type: "website",
+    locale: "es_AR",
+    url: "https://xyntral.com.ar",
+    siteName: "xyntral",
+    title: "xyntral - Soportes para Celular, Tablet y Notebook",
+    description:
+      "Tecnología útil y funcional. Soportes de calidad para todos tus dispositivos.",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "xyntral - Soportes para dispositivos",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "xyntral - Soportes para Celular, Tablet y Notebook",
+    description: "Tecnología útil y funcional para tu día a día",
+    images: ["/og-image.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({
@@ -26,38 +71,19 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        {/* 👇 Metadatos PWA extras */}
+        {/* PWA Meta Tags */}
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#2563eb" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Guía C.A." />
-        <Script
-          src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,geometry&language=es&region=AR`}
-          strategy="beforeInteractive"
-        />
+        <meta name="apple-mobile-web-app-title" content="xyntral" />
 
-        <Script id="gtm-head" strategy="afterInteractive">
-          {`
-    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-NLHP8RM7');
-  `}
-        </Script>
+        {/* Preconnect to external domains */}
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
       </head>
-      <body className="bg-white text-gray-900">
-        <noscript>
-          <iframe
-            src="https://www.googletagmanager.com/ns.html?id=GTM-NLHP8RM7"
-            height="0"
-            width="0"
-            style={{ display: "none", visibility: "hidden" }}
-          ></iframe>
-        </noscript>
-
+      <body className="bg-white text-gray-900 antialiased">
         <WhatsappFloating />
         <AuthProvider>
           <LayoutContent>{children}</LayoutContent>

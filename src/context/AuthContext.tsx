@@ -1,230 +1,298 @@
 "use client";
 
-import { createContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Usuario, Empresa } from "@/types";
 
-type AuthContextType = {
-  usuario: Usuario | null;
-  empresa: Empresa | null;
+// =====================================================
+// TIPOS
+// =====================================================
+
+export interface User {
+  id: number;
+  email: string;
+  nombre: string;
+  apellido: string;
+  telefono?: string;
+  rol: "cliente" | "admin";
+  activo: boolean;
+  email_verificado: boolean;
+  fecha_registro: string;
+}
+
+interface AuthContextType {
+  user: User | null;
   loading: boolean;
-  logout: () => void;
-  checkAuth: () => void;
-  refreshEmpresa: () => Promise<void>; // ✅ CAMBIO: Retorna Promise para mejor control
-};
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+  login: (user: User) => void;
+}
 
-const AuthContext = createContext<AuthContextType>({
-  usuario: null,
-  empresa: null,
-  loading: false,
-  logout: () => {},
-  checkAuth: () => {},
-  refreshEmpresa: async () => {}, // ✅ CAMBIO: Async en el default
-});
+// =====================================================
+// CONTEXT
+// =====================================================
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const [empresa, setEmpresa] = useState<Empresa | null>(null);
-  const [loading, setLoading] = useState(false);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// =====================================================
+// PROVIDER
+// =====================================================
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
   const router = useRouter();
   const pathname = usePathname();
 
-  // Determinar si estamos en una ruta que requiere autenticación
-  const isPrivateRoute = pathname.startsWith("/panel");
+  // Determinar tipo de ruta
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isCuentaRoute = pathname.startsWith("/cuenta");
+  const isCheckoutRoute = pathname.startsWith("/checkout");
   const isAuthRoute = pathname === "/login" || pathname === "/registro";
+  const isPrivateRoute = isAdminRoute || isCuentaRoute || isCheckoutRoute;
 
-  // ✅ CAMBIO PRINCIPAL: Función mejorada para cargar empresa con mejor manejo de errores
-  const fetchEmpresa = async (): Promise<Empresa | null> => {
+  // Valores computados
+  const isAuthenticated = !!user;
+  const isAdmin = user?.rol === "admin";
+
+  // =====================================================
+  // VERIFICAR AUTENTICACIÓN
+  // =====================================================
+
+  const fetchUser = async (): Promise<User | null> => {
     try {
-      console.log("🔄 [AuthContext] Cargando datos de empresa...");
-
-      const empresaRes = await fetch("/api/empresa/me", {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Cache-Control": "no-cache", // ✅ AGREGADO: Headers anti-caché
-          Pragma: "no-cache",
-          Expires: "0",
-        },
-      });
-
-      if (!empresaRes.ok) {
-        console.warn(
-          "⚠️ [AuthContext] No se pudo cargar empresa para usuario EMPRESA"
-        );
-        setEmpresa(null);
-        return null;
-      }
-
-      const data = await empresaRes.json();
-      console.log("✅ [AuthContext] Empresa cargada:", data.empresa?.nombre);
-
-      const empresaData = data.empresa;
-      setEmpresa(empresaData);
-      return empresaData;
-    } catch (error) {
-      console.error("❌ [AuthContext] Error al cargar empresa:", error);
-      setEmpresa(null);
-      return null;
-    }
-  };
-
-  const fetchUsuario = async () => {
-    setLoading(true);
-    try {
-      console.log("🔄 [AuthContext] Verificando autenticación...");
+      console.log("🔄 [Auth] Verificando autenticación...");
 
       const res = await fetch("/api/auth/me", {
         method: "GET",
         credentials: "include",
         headers: {
-          "Cache-Control": "no-cache", // ✅ AGREGADO: Headers anti-caché
+          "Cache-Control": "no-cache",
           Pragma: "no-cache",
-          Expires: "0",
         },
       });
 
       if (!res.ok) {
-        if (!isPrivateRoute) {
-          console.log(
-            "ℹ️ [AuthContext] Usuario no autenticado en ruta pública - OK"
-          );
+        if (isPrivateRoute) {
+          console.warn("⚠️ [Auth] No autorizado en ruta privada");
         } else {
-          console.warn("⚠️ [AuthContext] No autorizado en ruta privada");
+          console.log("ℹ️ [Auth] Usuario no autenticado (ruta pública)");
         }
         throw new Error("No autorizado");
       }
 
-      const { usuario } = await res.json();
-      console.log(
-        "✅ [AuthContext] Usuario cargado:",
-        usuario.email,
-        "-",
-        usuario.rol
-      );
-      setUsuario(usuario);
+      const data = await res.json();
+      const userData = data.user || data.usuario;
 
-      // Cargar empresa solo si es rol EMPRESA
-      if (usuario.rol === "EMPRESA") {
-        await fetchEmpresa();
-      } else {
-        setEmpresa(null);
+      if (!userData) {
+        throw new Error("No se recibió información del usuario");
       }
+
+      console.log(
+        "✅ [Auth] Usuario autenticado:",
+        userData.email,
+        "-",
+        userData.rol
+      );
+      setUser(userData);
+      return userData;
     } catch (error) {
-      if (isPrivateRoute) {
-        console.error("❌ [AuthContext] Error en fetchUsuario:", error);
-      }
-      setUsuario(null);
-      setEmpresa(null);
-    } finally {
-      setLoading(false);
-      setHasCheckedAuth(true);
+      console.error("❌ [Auth] Error al verificar autenticación:", error);
+      setUser(null);
+      return null;
     }
   };
 
-  // ✅ CAMBIO PRINCIPAL: Función mejorada para refrescar empresa
-  const refreshEmpresa = async (): Promise<void> => {
-    if (!usuario || usuario.rol !== "EMPRESA") {
-      console.log(
-        "ℹ️ [AuthContext] No es usuario EMPRESA, saltando refresh de empresa"
-      );
+  // =====================================================
+  // VERIFICACIÓN AUTOMÁTICA AL MONTAR
+  // =====================================================
+
+  useEffect(() => {
+    const initAuth = async () => {
+      // Solo verificar automáticamente en rutas privadas o de auth
+      if (isPrivateRoute || isAuthRoute) {
+        if (!hasCheckedAuth) {
+          console.log("🚀 [Auth] Iniciando verificación automática");
+          setLoading(true);
+          await fetchUser();
+          setLoading(false);
+          setHasCheckedAuth(true);
+        }
+      } else {
+        // En rutas públicas, marcar como verificado sin hacer request
+        if (!hasCheckedAuth) {
+          console.log("ℹ️ [Auth] Ruta pública - marcando como verificada");
+          setLoading(false);
+          setHasCheckedAuth(true);
+        }
+      }
+    };
+
+    initAuth();
+  }, [pathname, hasCheckedAuth]);
+
+  // =====================================================
+  // VERIFICACIÓN MANUAL (útil después de login)
+  // =====================================================
+
+  const checkAuth = async () => {
+    console.log("🔄 [Auth] Verificación manual solicitada");
+    setLoading(true);
+    setHasCheckedAuth(false);
+    await fetchUser();
+    setLoading(false);
+    setHasCheckedAuth(true);
+  };
+
+  // =====================================================
+  // REFRESCAR DATOS DEL USUARIO
+  // =====================================================
+
+  const refreshUser = async () => {
+    if (!user) {
+      console.log("ℹ️ [Auth] No hay usuario para refrescar");
       return;
     }
 
     try {
-      console.log("🔄 [AuthContext] Refrescando datos de empresa...");
+      console.log("🔄 [Auth] Refrescando datos del usuario...");
+      const updatedUser = await fetchUser();
 
-      const empresaActualizada = await fetchEmpresa();
-
-      if (empresaActualizada) {
-        console.log(
-          "✅ [AuthContext] Empresa refrescada exitosamente:",
-          empresaActualizada.nombre
-        );
-        console.log("📊 [AuthContext] Datos actualizados:", {
-          id: empresaActualizada.id,
-          slug: empresaActualizada.slug,
-          servicios: empresaActualizada.servicios?.length || 0,
-          imagenes: empresaActualizada.imagenes?.length || 0,
-        });
+      if (updatedUser) {
+        console.log("✅ [Auth] Usuario actualizado:", updatedUser.email);
       } else {
-        console.warn("⚠️ [AuthContext] No se pudo refrescar la empresa");
+        console.warn("⚠️ [Auth] No se pudo refrescar el usuario");
       }
     } catch (error) {
-      console.error("❌ [AuthContext] Error al refrescar empresa:", error);
-      throw error; // ✅ CAMBIO: Re-lanzar el error para que el componente pueda manejarlo
+      console.error("❌ [Auth] Error al refrescar usuario:", error);
+      throw error;
     }
   };
 
-  useEffect(() => {
-    // Solo verificar auth automáticamente en rutas privadas o de auth
-    if (isPrivateRoute || isAuthRoute) {
-      if (!hasCheckedAuth) {
-        console.log(
-          "🚀 [AuthContext] Iniciando verificación de auth automática"
-        );
-        fetchUsuario();
-      }
-    } else {
-      // En rutas públicas, solo marcar como "checkeado" sin hacer request
-      if (!hasCheckedAuth) {
-        console.log("ℹ️ [AuthContext] Ruta pública, marcando como verificada");
-        setLoading(false);
-        setHasCheckedAuth(true);
-      }
-    }
-  }, [pathname, hasCheckedAuth, isPrivateRoute, isAuthRoute]);
+  // =====================================================
+  // LOGIN MANUAL (desde componentes)
+  // =====================================================
 
-  // ✅ CAMBIO: Función manual para verificar auth (útil para login)
-  const checkAuth = () => {
-    console.log("🔄 [AuthContext] Verificación manual de auth solicitada");
-    setHasCheckedAuth(false); // ✅ CAMBIO: Resetear flag para forzar nueva verificación
-    fetchUsuario();
+  const login = (userData: User) => {
+    console.log("✅ [Auth] Login manual:", userData.email);
+    setUser(userData);
+    setHasCheckedAuth(true);
   };
+
+  // =====================================================
+  // LOGOUT
+  // =====================================================
 
   const logout = async () => {
     try {
-      console.log("👋 [AuthContext] Cerrando sesión...");
+      console.log("👋 [Auth] Cerrando sesión...");
+
       await fetch("/api/auth/logout", {
         method: "POST",
         credentials: "include",
       });
-      console.log("✅ [AuthContext] Sesión cerrada exitosamente");
-    } catch (e) {
-      console.error("❌ [AuthContext] Error al cerrar sesión:", e);
+
+      console.log("✅ [Auth] Sesión cerrada");
+    } catch (error) {
+      console.error("❌ [Auth] Error al cerrar sesión:", error);
+    } finally {
+      // Limpiar estado local siempre
+      setUser(null);
+      setHasCheckedAuth(false);
+      setLoading(false);
+
+      // Redirigir a login
+      router.push("/login");
     }
-
-    // ✅ CAMBIO: Limpiar estados de forma más robusta
-    setUsuario(null);
-    setEmpresa(null);
-    setHasCheckedAuth(false);
-    setLoading(false);
-
-    router.push("/login");
   };
 
-  // ✅ AGREGADO: Debug info en desarrollo
+  // =====================================================
+  // PROTECCIÓN DE RUTAS (opcional)
+  // =====================================================
+
+  useEffect(() => {
+    if (!loading && hasCheckedAuth) {
+      // Redirigir a login si intentan acceder a rutas privadas sin auth
+      if (isPrivateRoute && !user) {
+        console.warn("⚠️ [Auth] Acceso denegado - redirigiendo a login");
+        router.push("/login");
+        return;
+      }
+
+      // Redirigir a home si intentan acceder a admin sin ser admin
+      if (isAdminRoute && user && !isAdmin) {
+        console.warn("⚠️ [Auth] Acceso denegado a admin - no es administrador");
+        router.push("/");
+        return;
+      }
+
+      // Redirigir usuarios autenticados que intentan ver login/registro
+      if (isAuthRoute && user) {
+        console.log("ℹ️ [Auth] Usuario ya autenticado - redirigiendo");
+        const redirectTo = user.rol === "admin" ? "/admin" : "/cuenta";
+        router.push(redirectTo);
+        return;
+      }
+    }
+  }, [loading, hasCheckedAuth, user, pathname]);
+
+  // =====================================================
+  // DEBUG (solo en desarrollo)
+  // =====================================================
+
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
-      console.log("🔍 [AuthContext] Estado actual:", {
-        usuario: usuario?.email || "null",
-        empresa: empresa?.nombre || "null",
+      console.log("🔍 [Auth] Estado:", {
+        user: user?.email || "null",
+        rol: user?.rol || "null",
+        isAuthenticated,
+        isAdmin,
         loading,
         hasCheckedAuth,
         pathname,
       });
     }
-  }, [usuario, empresa, loading, hasCheckedAuth, pathname]);
+  }, [user, loading, hasCheckedAuth, pathname]);
+
+  // =====================================================
+  // PROVIDER
+  // =====================================================
 
   return (
     <AuthContext.Provider
-      value={{ usuario, empresa, loading, logout, checkAuth, refreshEmpresa }}
+      value={{
+        user,
+        loading,
+        isAuthenticated,
+        isAdmin,
+        logout,
+        checkAuth,
+        refreshUser,
+        login,
+      }}
     >
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
+// =====================================================
+// HOOK PERSONALIZADO
+// =====================================================
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+
+  if (context === undefined) {
+    throw new Error("useAuth debe ser usado dentro de un AuthProvider");
+  }
+
+  return context;
+}
+
+// Export del contexto para casos especiales
 export { AuthContext };
