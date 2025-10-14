@@ -1,6 +1,7 @@
+// src/app/productos/ProductsContent.tsx
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import ProductCard from "@/components/productos/ProductsCard";
 import {
@@ -25,106 +26,143 @@ export default function ProductsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const filtros = {
-    categoria: searchParams.get("categoria") || "",
-    busqueda: searchParams.get("busqueda") || "",
-    precioMin: Number(searchParams.get("precioMin")) || 0,
-    precioMax: Number(searchParams.get("precioMax")) || 100000,
-    soloStock: searchParams.get("soloStock") === "true",
-    destacado: searchParams.get("destacado") === "true",
-    orden: searchParams.get("orden") || "reciente",
-  };
+  // ✅ Usar un PRIMITIVO estable para deps (evita loops)
+  const sp = searchParams.toString();
+
+  // ✅ Derivar filtros de forma MEMOIZADA a partir de `sp`
+  const filtros = useMemo(() => {
+    const get = (k: string) => searchParams.get(k);
+    return {
+      categoria: get("categoria") || "",
+      busqueda: get("busqueda") || "",
+      precioMin: Number(get("precioMin")) || 0,
+      precioMax: Number(get("precioMax")) || 100000,
+      soloStock: get("soloStock") === "true",
+      destacado: get("destacado") === "true",
+      orden: get("orden") || "reciente",
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sp]); // ← importante: dependemos del string, no del objeto
 
   const paginaActual = parseInt(searchParams.get("pagina") || "1", 10);
   const productosPorPagina = 12;
 
-  // Cargar productos
-  const loadProductos = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (filtros.categoria) params.append("categoria", filtros.categoria);
-      if (filtros.busqueda) params.append("busqueda", filtros.busqueda);
-      if (filtros.precioMin) params.append("precioMin", String(filtros.precioMin));
-      if (filtros.precioMax) params.append("precioMax", String(filtros.precioMax));
-      if (filtros.soloStock) params.append("soloStock", "true");
-      if (filtros.destacado) params.append("destacado", "true");
-      params.append("ordenar", filtros.orden);
-
-      const res = await fetch(`/api/productos?${params.toString()}`);
-      const data = await res.json();
-
-      if (data.success && Array.isArray(data.data)) {
-        setProductos(data.data);
-      } else {
-        console.error("Formato de respuesta inesperado:", data);
-        setProductos([]);
-      }
-    } catch (error) {
-      console.error("Error al cargar productos:", error);
-      setProductos([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [filtros]);
-
-  // Cargar categorías
+  // ✅ Cargar categorías (una sola vez)
   useEffect(() => {
-    const loadCategorias = async () => {
+    let abort = false;
+    (async () => {
       try {
-        const res = await fetch("/api/categorias");
+        const res = await fetch("/api/categorias", { cache: "no-store" });
+        if (!res.ok) return;
         const data = await res.json();
-        
-        if (data.success && Array.isArray(data.data)) {
+        if (!abort && data.success && Array.isArray(data.data)) {
           setCategorias(data.data);
         }
-      } catch (error) {
-        console.error("Error al cargar categorías:", error);
+      } catch (err) {
+        console.error("Error al cargar categorías:", err);
       }
+    })();
+    return () => {
+      abort = true;
     };
-
-    loadCategorias();
   }, []);
 
+  // ✅ Cargar productos cuando cambie la query (sin useCallback)
   useEffect(() => {
-    loadProductos();
-  }, [loadProductos]);
+    const controller = new AbortController();
 
-  // Calcular rango de precios
+    (async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (filtros.categoria) params.set("categoria", filtros.categoria);
+        if (filtros.busqueda) params.set("busqueda", filtros.busqueda);
+        if (filtros.precioMin)
+          params.set("precioMin", String(filtros.precioMin));
+        if (filtros.precioMax)
+          params.set("precioMax", String(filtros.precioMax));
+        if (filtros.soloStock) params.set("soloStock", "true");
+        if (filtros.destacado) params.set("destacado", "true");
+        params.set("ordenar", filtros.orden);
+
+        const res = await fetch(`/api/productos?${params.toString()}`, {
+          cache: "no-store",
+          headers: { "X-Requested-With": "products-client" },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          console.error("Respuesta no OK:", res.status);
+          setProductos([]);
+          return;
+        }
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setProductos(data.data);
+        } else {
+          console.error("Formato de respuesta inesperado:", data);
+          setProductos([]);
+        }
+      } catch (err) {
+        if (err) {
+          console.error("Error al cargar productos:", err);
+          setProductos([]);
+        }
+      } finally {
+        // El abort también entra acá, pero no rompe nada
+        setLoading(false);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [sp, filtros]);
+
+  // ✅ Calcular rango de precios a partir de lo cargado
   useEffect(() => {
     if (productos.length > 0) {
-      const precios = productos.map((p) => p.precio);
-      setPriceRange([Math.floor(Math.min(...precios)), Math.ceil(Math.max(...precios))]);
+      const precios = productos.map((p) => Number(p.precio) || 0);
+      const min = Math.floor(Math.min(...precios));
+      const max = Math.ceil(Math.max(...precios));
+      setPriceRange([isFinite(min) ? min : 0, isFinite(max) ? max : 0]);
+    } else {
+      setPriceRange([0, 100000]);
     }
   }, [productos]);
 
-  // Ordenar productos
-  const productosOrdenados = [...productos].sort((a, b) => {
+  // Ordenar productos en memoria (según filtro actual)
+  const productosOrdenados = useMemo(() => {
+    const arr = [...productos];
     switch (filtros.orden) {
       case "precio_asc":
-        return a.precio - b.precio;
+        return arr.sort((a, b) => (a.precio ?? 0) - (b.precio ?? 0));
       case "precio_desc":
-        return b.precio - a.precio;
+        return arr.sort((a, b) => (b.precio ?? 0) - (a.precio ?? 0));
       case "nombre_asc":
-        return a.nombre.localeCompare(b.nombre);
+        return arr.sort((a, b) => a.nombre.localeCompare(b.nombre));
       case "nombre_desc":
-        return b.nombre.localeCompare(a.nombre);
+        return arr.sort((a, b) => b.nombre.localeCompare(a.nombre));
       case "popular":
-        return (b.ventas || 0) - (a.ventas || 0);
+        return arr.sort((a, b) => (b.ventas ?? 0) - (a.ventas ?? 0));
       case "reciente":
       default:
-        return new Date(b.fecha_creacion).getTime() - new Date(a.fecha_creacion).getTime();
+        return arr.sort(
+          (a, b) =>
+            new Date(b.fecha_creacion).getTime() -
+            new Date(a.fecha_creacion).getTime()
+        );
     }
-  });
+  }, [productos, filtros.orden]);
 
   // Paginación
-  const totalPaginas = Math.ceil(productosOrdenados.length / productosPorPagina);
+  const totalPaginas = Math.ceil(
+    productosOrdenados.length / productosPorPagina
+  );
   const indiceInicial = (paginaActual - 1) * productosPorPagina;
   const productosPaginados = productosOrdenados.slice(
     indiceInicial,
     indiceInicial + productosPorPagina
   );
 
+  // ✅ Actualizar query string sin causar loops (OK)
   const actualizarQuery = (nuevo: Record<string, string>) => {
     const query = new URLSearchParams(searchParams.toString());
     Object.entries(nuevo).forEach(([key, value]) => {
@@ -191,14 +229,16 @@ export default function ProductsContent() {
                 Nuestros Productos
               </h1>
               <p className="text-gray-600 text-base sm:text-lg">
-                {productosOrdenados.length} producto{productosOrdenados.length !== 1 ? "s" : ""} disponible
+                {productosOrdenados.length} producto
+                {productosOrdenados.length !== 1 ? "s" : ""} disponible
                 {productosOrdenados.length !== 1 ? "s" : ""}
-                {filtros.categoria && ` en ${filtros.categoria.replace(/-/g, " ")}`}
+                {filtros.categoria &&
+                  ` en ${filtros.categoria.replace(/-/g, " ")}`}
               </p>
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Toggle vista móvil */}
+              {/* Toggle vista */}
               <div className="hidden sm:flex bg-white rounded-lg border border-gray-200 p-1">
                 <button
                   onClick={() => setViewMode("grid")}
@@ -226,7 +266,7 @@ export default function ProductsContent() {
 
               {/* Botón filtros móvil */}
               <button
-                onClick={() => setShowFilters(!showFilters)}
+                onClick={() => setShowFilters((s) => !s)}
                 className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold shadow-md hover:bg-blue-700 transition"
               >
                 <SlidersHorizontal size={16} />
@@ -290,7 +330,9 @@ export default function ProductsContent() {
                   </label>
                   <div className="space-y-2">
                     <button
-                      onClick={() => actualizarQuery({ categoria: "", pagina: "1" })}
+                      onClick={() =>
+                        actualizarQuery({ categoria: "", pagina: "1" })
+                      }
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
                         !filtros.categoria
                           ? "bg-blue-50 text-blue-700 font-semibold"
@@ -305,7 +347,10 @@ export default function ProductsContent() {
                         <button
                           key={cat.id}
                           onClick={() =>
-                            actualizarQuery({ categoria: cat.slug, pagina: "1" })
+                            actualizarQuery({
+                              categoria: cat.slug,
+                              pagina: "1",
+                            })
                           }
                           className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
                             filtros.categoria === cat.slug
@@ -314,7 +359,7 @@ export default function ProductsContent() {
                           }`}
                         >
                           {cat.nombre}
-                          {cat.productos_count !== undefined && (
+                          {typeof cat.productos_count === "number" && (
                             <span className="float-right text-xs text-gray-500">
                               ({cat.productos_count})
                             </span>
@@ -347,7 +392,11 @@ export default function ProductsContent() {
                       <input
                         type="number"
                         placeholder="Máx"
-                        value={filtros.precioMax === 100000 ? "" : filtros.precioMax}
+                        value={
+                          filtros.precioMax === 100000
+                            ? ""
+                            : String(filtros.precioMax)
+                        }
                         onChange={(e) =>
                           actualizarQuery({
                             precioMax: e.target.value || "100000",

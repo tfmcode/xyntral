@@ -1,21 +1,22 @@
+// src/components/Hero.tsx
 "use client";
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { gsap } from "gsap";
 import { ShoppingCart, ArrowRight } from "lucide-react";
 
 const Hero = () => {
-  const containerRef = useRef(null);
-  const titleRef = useRef(null);
-  const subtitleRef = useRef(null);
-  const ctaRef = useRef(null);
-  const imageRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const titleRef = useRef<HTMLHeadingElement | null>(null);
+  const subtitleRef = useRef<HTMLParagraphElement | null>(null);
+  const ctaRef = useRef<HTMLDivElement | null>(null);
+  const imageRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
       const tl = gsap.timeline();
-
       tl.from(titleRef.current, {
         opacity: 0,
         y: -30,
@@ -24,36 +25,20 @@ const Hero = () => {
       })
         .from(
           subtitleRef.current,
-          {
-            opacity: 0,
-            y: 20,
-            duration: 0.8,
-            ease: "power3.out",
-          },
+          { opacity: 0, y: 20, duration: 0.8, ease: "power3.out" },
           "-=0.4"
         )
         .from(
           ctaRef.current,
-          {
-            opacity: 0,
-            scale: 0.95,
-            duration: 0.6,
-            ease: "back.out(1.7)",
-          },
+          { opacity: 0, scale: 0.95, duration: 0.6, ease: "back.out(1.7)" },
           "-=0.3"
         )
         .from(
           imageRef.current,
-          {
-            opacity: 0,
-            x: 50,
-            duration: 1,
-            ease: "power2.out",
-          },
+          { opacity: 0, x: 40, duration: 0.9, ease: "power2.out" },
           "-=0.6"
         );
     }, containerRef);
-
     return () => ctx.revert();
   }, []);
 
@@ -62,13 +47,13 @@ const Hero = () => {
       ref={containerRef}
       className="relative bg-gradient-to-br from-slate-50 via-white to-slate-100 overflow-hidden"
     >
-      {/* Decorative elements */}
-      <div className="absolute top-20 right-0 w-72 h-72 bg-blue-100/30 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-100/20 rounded-full blur-3xl" />
+      {/* Elementos decorativos, alejados del banner */}
+      <div className="pointer-events-none absolute -top-10 -right-24 w-[28rem] h-[28rem] bg-blue-100/25 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -left-24 w-[34rem] h-[34rem] bg-purple-100/20 rounded-full blur-3xl" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24 lg:py-28">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left Content */}
+        <div className="grid lg:grid-cols-[1.05fr_1.2fr] gap-10 items-center">
+          {/* Izquierda */}
           <div className="text-center lg:text-left">
             <h1
               ref={titleRef}
@@ -110,7 +95,7 @@ const Hero = () => {
               </Link>
             </div>
 
-            {/* Trust badges */}
+            {/* Confianza */}
             <div className="mt-10 pt-10 border-t border-gray-200 flex flex-wrap gap-6 justify-center lg:justify-start text-sm text-gray-600">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full" />
@@ -125,30 +110,26 @@ const Hero = () => {
             </div>
           </div>
 
-          {/* Right Image */}
+          {/* Derecha: Banner grande, sin recorte */}
           <div ref={imageRef} className="relative">
-            <div className="relative aspect-square max-w-lg mx-auto">
-              {/* Placeholder - reemplazar con imagen real de productos */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100 rounded-3xl shadow-2xl flex items-center justify-center">
-                <div className="text-center p-8">
-                  <ShoppingCart className="w-24 h-24 mx-auto text-blue-600/50 mb-4" />
-                  <p className="text-gray-600 font-medium">
-                    Imagen hero principal
-                    <br />
-                    <span className="text-sm">(productos destacados)</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Floating badge */}
-              <div className="absolute -top-4 -right-4 bg-white rounded-2xl shadow-xl p-4 rotate-6 hover:rotate-0 transition-transform">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-blue-600">10+</p>
-                  <p className="text-xs text-gray-600 font-medium">Productos</p>
-                </div>
+            <div className="relative mx-auto max-w-2xl w-full aspect-[16/10] rounded-3xl  ring-1 ring-black/5 shadow-2xl overflow-hidden">
+              <Image
+                src="/img/banner.png" // ← tu imagen en public/img/banner.png
+                alt="xyntral - soportes destacados"
+                fill
+                priority
+                sizes="(min-width:1024px) 48rem, 92vw"
+                className="object-contain" // ← no recorta, muestra todo el producto
+              />
+              {/* Badge flotante */}
+              <div className="absolute top-3 right-3 bg-white/95 backdrop-blur rounded-xl shadow-lg px-3 py-2">
+                <p className="text-sm font-bold leading-none">
+                  <span className="text-blue-600">10+</span> Productos
+                </p>
               </div>
             </div>
           </div>
+          {/* /Derecha */}
         </div>
       </div>
     </section>
