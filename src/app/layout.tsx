@@ -5,6 +5,7 @@ import LayoutContent from "@/components/layout/LayoutContent";
 import { AuthProvider } from "@/context/AuthContext";
 import { CarritoProvider } from "@/context/CarritoContext";
 import WhatsappFloating from "@/components/ui/WhatsappFloating";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Xyntral - Soportes para Celular, Tablet y Notebook",
@@ -89,6 +90,13 @@ export default function RootLayout({
         <AuthProvider>
           <CarritoProvider>
             <LayoutContent>{children}</LayoutContent>
+            <Toaster
+              position="top-right"
+              richColors
+              expand={false}
+              closeButton
+              duration={3000}
+            />
           </CarritoProvider>
         </AuthProvider>
       </body>

@@ -226,9 +226,9 @@ export default function CarritoPage() {
                 </div>
               </div>
 
-              {/* Botón de checkout */}
+              {/* ✅ CAMBIO PRINCIPAL: Link ahora va a /iniciar-compra */}
               <Link
-                href="/checkout"
+                href="/iniciar-compra"
                 className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-lg hover:shadow-xl"
               >
                 Continuar al pago
