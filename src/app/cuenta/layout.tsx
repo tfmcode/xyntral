@@ -5,20 +5,19 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import {
-  Shield,
+  User,
   Menu,
   X,
   Home,
-  Users,
-  Package,
-  ShoppingCart,
+  ShoppingBag,
+  MapPin,
   Settings,
-  Eye,
-  ChevronRight,
   AlertCircle,
+  ChevronRight,
+  Store,
 } from "lucide-react";
 
-export default function AdminLayout({
+export default function CuentaLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -36,11 +35,11 @@ export default function AdminLayout({
   useEffect(() => {
     if (mounted && !loading) {
       if (!user) {
-        router.push("/login");
+        router.push("/login?redirect=/cuenta");
         return;
       }
 
-      if (user.rol !== "admin") {
+      if (user.rol !== "cliente") {
         router.push("/unauthorized");
         return;
       }
@@ -66,35 +65,33 @@ export default function AdminLayout({
     }
   }, [sidebarOpen]);
 
-  if (!mounted || loading || !user) {
+  if (!mounted || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">
-            Cargando panel de administrador...
-          </p>
+          <p className="text-gray-600 font-medium">Cargando tu cuenta...</p>
         </div>
       </div>
     );
   }
 
-  if (user.rol !== "admin") {
+  if (!user || user.rol !== "cliente") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
+          <AlertCircle size={48} className="text-blue-500 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Acceso no autorizado
+            Acceso requerido
           </h3>
           <p className="text-gray-600 mb-4">
-            No tenés permisos para acceder a esta sección.
+            Necesitás iniciar sesión para acceder a tu cuenta.
           </p>
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/login")}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Volver al inicio
+            Iniciar sesión
           </button>
         </div>
       </div>
@@ -103,32 +100,27 @@ export default function AdminLayout({
 
   const navigation = [
     {
-      label: "Dashboard",
-      href: "/admin",
+      label: "Mi Cuenta",
+      href: "/cuenta",
       icon: Home,
       exact: true,
     },
     {
-      label: "Productos",
-      href: "/admin/productos",
-      icon: Package,
+      label: "Mis Pedidos",
+      href: "/cuenta/pedidos",
+      icon: ShoppingBag,
       exact: false,
     },
     {
-      label: "Pedidos",
-      href: "/admin/pedidos",
-      icon: ShoppingCart,
+      label: "Direcciones",
+      href: "/cuenta/direcciones",
+      icon: MapPin,
       exact: false,
-    },
-    {
-      label: "Usuarios",
-      href: "/admin/usuarios",
-      icon: Users,
-      exact: false,
+      disabled: true,
     },
     {
       label: "Configuración",
-      href: "/admin/configuracion",
+      href: "/cuenta/configuracion",
       icon: Settings,
       exact: false,
       disabled: true,
@@ -147,25 +139,24 @@ export default function AdminLayout({
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-            <Shield size={20} className="text-white" />
+            <User size={20} className="text-white" />
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold text-gray-900 truncate">
-              xyntral Admin
+              Mi Cuenta
             </h2>
             <p className="text-sm text-gray-500 truncate">
-              {user?.nombre || "Administrador"}
+              {user.nombre} {user.apellido}
             </p>
           </div>
         </div>
 
         <Link
           href="/"
-          target="_blank"
           className="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
         >
-          <Eye size={14} />
-          Ver tienda
+          <Store size={14} />
+          Volver a la tienda
           <ChevronRight size={14} />
         </Link>
       </div>
@@ -214,17 +205,17 @@ export default function AdminLayout({
       </nav>
 
       <div className="p-4 border-t border-gray-200">
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4 mb-4">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-4">
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center flex-shrink-0">
-              <AlertCircle size={16} className="text-white" />
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+              <User size={16} className="text-white" />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-semibold text-amber-900 mb-1">
-                Acceso de administrador
+              <h3 className="text-sm font-semibold text-blue-900 mb-1">
+                Tu cuenta
               </h3>
-              <p className="text-xs text-amber-700 leading-relaxed">
-                Tenés control total sobre productos, pedidos y usuarios.
+              <p className="text-xs text-blue-700 leading-relaxed">
+                Gestioná tus pedidos, direcciones y preferencias desde aquí.
               </p>
             </div>
           </div>
@@ -259,10 +250,10 @@ export default function AdminLayout({
           <div className="flex items-center justify-between h-16 px-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <Shield size={16} className="text-white" />
+                <User size={16} className="text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">Admin</h1>
+                <h1 className="text-lg font-bold text-gray-900">Mi Cuenta</h1>
               </div>
             </div>
 
@@ -285,9 +276,7 @@ export default function AdminLayout({
 
             <aside className="fixed inset-y-0 left-0 w-80 max-w-[90vw] bg-white shadow-xl flex flex-col transform transition-transform duration-300 ease-out">
               <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  Menú Admin
-                </h2>
+                <h2 className="text-lg font-semibold text-gray-900">Menú</h2>
                 <button
                   onClick={() => setSidebarOpen(false)}
                   className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"

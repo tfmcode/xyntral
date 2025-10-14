@@ -3,8 +3,25 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function POST() {
-  const cookieStore = await cookies();
-  cookieStore.delete("token");
+  try {
+    // ✅ Obtener las cookies de forma correcta
+    const cookieStore = await cookies();
 
-  return NextResponse.json({ message: "Sesión cerrada" }, { status: 200 });
+    // ✅ Eliminar la cookie del token
+    cookieStore.delete("token");
+
+    console.log("✅ Logout exitoso - Cookie eliminada");
+
+    return NextResponse.json(
+      { mensaje: "Sesión cerrada exitosamente" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("❌ Error en logout:", error);
+
+    return NextResponse.json(
+      { mensaje: "Error al cerrar sesión" },
+      { status: 500 }
+    );
+  }
 }

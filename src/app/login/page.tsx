@@ -1,17 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth"; // ✅ Importar el hook
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import Link from "next/link";
 
-const Login = () => {
+export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
-  const { checkAuth } = useAuth(); // ✅ Obtener la función checkAuth
+  const searchParams = useSearchParams();
+  const { login } = useAuth();
+
+  const redirect = searchParams.get("redirect") || "/";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,100 +30,173 @@ const Login = () => {
         body: JSON.stringify({ email, password }),
       });
 
-      setLoading(false);
-
       if (!res.ok) {
-        try {
-          const data = await res.json();
-          setError(data.mensaje || "Credenciales inválidas");
-        } catch {
-          setError("Error al procesar la respuesta del servidor");
-        }
-        return;
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.mensaje || "Credenciales inválidas");
       }
 
       const { usuario } = await res.json();
 
-      // ✅ Actualizar el estado del AuthContext después del login exitoso
-      checkAuth();
+      // ✅ Actualizar contexto
+      login(usuario);
 
-      // Redirigir según el rol
-      if (usuario?.rol === "ADMIN") {
-        router.push("/panel/admin");
-      } else if (usuario?.rol === "EMPRESA") {
-        router.push("/panel/empresa");
+      // ✅ Redirigir según rol
+      if (usuario.rol === "admin") {
+        router.push("/admin");
+      } else if (usuario.rol === "cliente") {
+        // Si venía de checkout u otra página, redirigir ahí
+        router.push(redirect !== "/" ? redirect : "/cuenta");
       } else {
         router.push("/");
       }
-    } catch {
+
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al iniciar sesión");
+    } finally {
       setLoading(false);
-      setError("Error inesperado. Intentá de nuevo.");
     }
   };
 
   return (
-    <div className="flex items-center justify-center bg-[#f6f8fb] px-4 py-10">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-4 sm:p-6 space-y-6"
-      >
-        <div className="text-center">
-          <h2 className="text-xl sm:text-2xl font-bold text-[#172a56]">
-            Iniciar sesión
-          </h2>
-          <p className="text-sm sm:text-base text-zinc-500 mt-1">
-            Accedé a tu panel de empresa o administración
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 px-4 py-12">
+      <div className="w-full max-w-md">
+        {/* Logo / Título */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">xyntral</h1>
+          <p className="text-gray-600">Iniciá sesión en tu cuenta</p>
         </div>
 
-        {error && (
-          <div className="bg-red-100 text-red-700 px-4 py-2 rounded text-sm text-center">
-            {error}
-          </div>
-        )}
-
-        <div>
-          <label className="block text-sm font-medium text-zinc-700 mb-1">
-            Email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-            required
-            className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#172a56] text-sm"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-zinc-700 mb-1">
-            Contraseña
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-            className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#172a56] text-sm"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full font-semibold py-2.5 rounded-md shadow-sm text-sm transition-all ${
-            loading
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-[#172a56] text-white hover:bg-[#101d3e]"
-          }`}
+        {/* Formulario */}
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-2xl shadow-xl p-8 space-y-6"
         >
-          {loading ? "Cargando..." : "Entrar"}
-        </button>
-      </form>
+          {/* Error message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Email */}
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              required
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              placeholder="tu@email.com"
+            />
+          </div>
+
+          {/* Password */}
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Contraseña
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              placeholder="••••••••"
+            />
+          </div>
+
+          {/* Olvidé mi contraseña */}
+          <div className="flex justify-end">
+            <Link
+              href="/recuperar-password"
+              className="text-sm text-blue-600 hover:text-blue-700 transition"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+
+          {/* Submit button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full font-semibold py-3 rounded-lg shadow-md text-white transition-all ${
+              loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 hover:shadow-lg transform hover:scale-[1.02]"
+            }`}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg
+                  className="animate-spin h-5 w-5"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Ingresando...
+              </span>
+            ) : (
+              "Iniciar sesión"
+            )}
+          </button>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">
+                ¿No tenés cuenta?
+              </span>
+            </div>
+          </div>
+
+          {/* Registro link */}
+          <Link
+            href="/registro"
+            className="block w-full text-center font-semibold py-3 rounded-lg border-2 border-blue-600 text-blue-600 hover:bg-blue-50 transition-all transform hover:scale-[1.02]"
+          >
+            Crear cuenta nueva
+          </Link>
+        </form>
+
+        {/* Footer */}
+        <p className="text-center text-sm text-gray-500 mt-8">
+          Al continuar, aceptás nuestros{" "}
+          <Link href="/terminos" className="text-blue-600 hover:underline">
+            Términos y Condiciones
+          </Link>
+        </p>
+      </div>
     </div>
   );
-};
-
-export default Login;
+}
