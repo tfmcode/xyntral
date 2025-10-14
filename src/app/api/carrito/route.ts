@@ -63,7 +63,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/carrito - Agregar producto al carrito
 export async function POST(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
   const user = token && verifyJwt(token);
@@ -72,43 +71,43 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
+  const client = await pool.connect();
+
   try {
+    await client.query("BEGIN");
+
     const { producto_id, cantidad = 1 } = await req.json();
 
-    if (!producto_id || cantidad <= 0) {
-      return NextResponse.json({ message: "Datos inválidos" }, { status: 400 });
-    }
-
-    // Verificar stock disponible
-    const productoQuery = await pool.query(
-      "SELECT stock, activo FROM producto WHERE id = $1",
+    // ✅ Lock del producto para evitar race conditions
+    const productoQuery = await client.query(
+      "SELECT stock, activo, precio FROM producto WHERE id = $1 FOR UPDATE",
       [producto_id]
     );
 
     if (productoQuery.rows.length === 0) {
-      return NextResponse.json(
-        { message: "Producto no encontrado" },
-        { status: 404 }
-      );
+      throw new Error("Producto no encontrado");
     }
 
     const producto = productoQuery.rows[0];
 
     if (!producto.activo) {
-      return NextResponse.json(
-        { message: "Producto no disponible" },
-        { status: 400 }
-      );
+      throw new Error("Producto no disponible");
     }
 
-    if (producto.stock < cantidad) {
-      return NextResponse.json(
-        { message: `Solo hay ${producto.stock} unidades disponibles` },
-        { status: 400 }
-      );
+    // Verificar cantidad actual en carrito
+    const carritoActual = await client.query(
+      "SELECT cantidad FROM carrito WHERE usuario_id = $1 AND producto_id = $2",
+      [user.id, producto_id]
+    );
+
+    const cantidadActual = carritoActual.rows[0]?.cantidad || 0;
+    const cantidadTotal = cantidadActual + cantidad;
+
+    if (producto.stock < cantidadTotal) {
+      throw new Error(`Solo hay ${producto.stock} unidades disponibles`);
     }
 
-    // Insertar o actualizar carrito
+    // Insertar o actualizar
     const upsertQuery = `
       INSERT INTO carrito (usuario_id, producto_id, cantidad)
       VALUES ($1, $2, $3)
@@ -119,18 +118,30 @@ export async function POST(req: NextRequest) {
       RETURNING id
     `;
 
-    await pool.query(upsertQuery, [user.id, producto_id, cantidad]);
+    await client.query(upsertQuery, [user.id, producto_id, cantidad]);
 
-    return NextResponse.json({ message: "Producto agregado al carrito" });
+    await client.query("COMMIT");
+
+    return NextResponse.json({
+      message: "Producto agregado al carrito",
+      cantidad_total: cantidadTotal,
+    });
   } catch (error) {
+    await client.query("ROLLBACK");
     console.error("❌ Error al agregar al carrito:", error);
     return NextResponse.json(
-      { message: "Error al agregar al carrito" },
-      { status: 500 }
+      {
+        message:
+          error instanceof Error
+            ? error.message
+            : "Error al agregar al carrito",
+      },
+      { status: 400 }
     );
+  } finally {
+    client.release();
   }
 }
-
 // DELETE /api/carrito - Vaciar carrito
 export async function DELETE(req: NextRequest) {
   const token = req.cookies.get("token")?.value;

@@ -1,8 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, Star, Tag, TrendingUp, Package } from "lucide-react";
+import {
+  ShoppingCart,
+  Star,
+  Tag,
+  TrendingUp,
+  Package,
+  Check,
+  Loader2,
+} from "lucide-react";
+import { useCarrito } from "@/context/CarritoContext";
 import type { Producto } from "@/types";
 
 interface Props {
@@ -11,6 +21,10 @@ interface Props {
 }
 
 const ProductCard = ({ producto, viewMode = "grid" }: Props) => {
+  const { agregarProducto } = useCarrito();
+  const [loading, setLoading] = useState(false);
+  const [added, setAdded] = useState(false);
+
   const imagenPrincipal = producto.imagen_url || "/img/placeholder-product.png";
   const tieneDescuento = !!producto.precio_anterior;
   const porcentajeDescuento = tieneDescuento
@@ -40,6 +54,82 @@ const ProductCard = ({ producto, viewMode = "grid" }: Props) => {
     return null;
   };
 
+  // ✅ Función para agregar al carrito
+  const handleAgregarAlCarrito = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (producto.stock === 0 || loading || added) return;
+
+    setLoading(true);
+
+    try {
+      await agregarProducto(producto, 1);
+      setAdded(true);
+
+      // Resetear después de 2 segundos
+      setTimeout(() => {
+        setAdded(false);
+      }, 2000);
+    } catch (error) {
+      console.error("Error al agregar al carrito:", error);
+      alert("Error al agregar al carrito. Intentá de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Componente de botón reutilizable
+  const AgregarButton = ({
+    className,
+    showText = true,
+  }: {
+    className?: string;
+    showText?: boolean;
+  }) => {
+    if (loading) {
+      return (
+        <button
+          disabled
+          className={`inline-flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold transition ${className}`}
+        >
+          <Loader2 size={16} className="animate-spin" />
+          {showText && <span className="hidden sm:inline">Agregando...</span>}
+        </button>
+      );
+    }
+
+    if (added) {
+      return (
+        <button
+          disabled
+          className={`inline-flex items-center justify-center gap-2 bg-green-600 text-white font-semibold transition ${className}`}
+        >
+          <Check size={16} />
+          {showText && <span className="hidden sm:inline">¡Agregado!</span>}
+        </button>
+      );
+    }
+
+    return (
+      <button
+        onClick={handleAgregarAlCarrito}
+        disabled={producto.stock === 0}
+        className={`inline-flex items-center justify-center gap-2 bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition ${className}`}
+      >
+        <ShoppingCart size={16} />
+        {showText && (
+          <span className="hidden sm:inline">
+            {producto.stock === 0 ? "Sin stock" : "Agregar"}
+          </span>
+        )}
+      </button>
+    );
+  };
+
+  // ========================================
+  // VISTA DE LISTA
+  // ========================================
   if (viewMode === "list") {
     return (
       <div className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden flex">
@@ -99,19 +189,16 @@ const ProductCard = ({ producto, viewMode = "grid" }: Props) => {
               </p>
             </div>
 
-            <button
-              disabled={producto.stock === 0}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
-            >
-              <ShoppingCart size={18} />
-              {producto.stock === 0 ? "Sin stock" : "Agregar"}
-            </button>
+            <AgregarButton className="px-6 py-3 rounded-lg" showText />
           </div>
         </div>
       </div>
     );
   }
 
+  // ========================================
+  // VISTA DE GRID (DEFAULT)
+  // ========================================
   return (
     <Link
       href={`/productos/${producto.slug}`}
@@ -159,18 +246,7 @@ const ProductCard = ({ producto, viewMode = "grid" }: Props) => {
 
         {/* Quick add button (desktop) */}
         <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              // TODO: Agregar al carrito
-              console.log("Agregar al carrito:", producto.id);
-            }}
-            disabled={producto.stock === 0}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg font-semibold shadow-lg hover:bg-gray-50 disabled:bg-gray-200 disabled:cursor-not-allowed transition"
-          >
-            <ShoppingCart size={16} />
-            <span className="hidden sm:inline">Agregar</span>
-          </button>
+          <AgregarButton className="px-4 py-2 rounded-lg shadow-lg" />
         </div>
       </div>
 
@@ -221,17 +297,10 @@ const ProductCard = ({ producto, viewMode = "grid" }: Props) => {
         </div>
 
         {/* Botón mobile */}
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            // TODO: Agregar al carrito
-          }}
-          disabled={producto.stock === 0}
-          className="mt-4 w-full sm:hidden inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
-        >
-          <ShoppingCart size={16} />
-          {producto.stock === 0 ? "Sin stock" : "Agregar al carrito"}
-        </button>
+        <AgregarButton
+          className="mt-4 w-full sm:hidden px-4 py-2.5 rounded-lg"
+          showText
+        />
       </div>
     </Link>
   );

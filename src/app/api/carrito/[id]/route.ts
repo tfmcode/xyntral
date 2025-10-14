@@ -1,5 +1,3 @@
-// PUT /api/carrito/[id] - Actualizar cantidad
-// DELETE /api/carrito/[id] - Quitar producto
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@/lib/auth";
 import pool from "@/lib/db";
@@ -16,6 +14,7 @@ export async function PUT(
   }
 
   const { id } = await context.params;
+  const productoId = Number(id); // ← Este es el producto_id
 
   try {
     const { cantidad } = await req.json();
@@ -27,15 +26,15 @@ export async function PUT(
       );
     }
 
-    // Verificar ownership y stock
+    // ✅ Verificar ownership y stock
     const checkQuery = `
-      SELECT c.producto_id, p.stock
+      SELECT c.id as carrito_id, p.stock
       FROM carrito c
       INNER JOIN producto p ON c.producto_id = p.id
-      WHERE c.id = $1 AND c.usuario_id = $2
+      WHERE c.producto_id = $1 AND c.usuario_id = $2
     `;
 
-    const checkResult = await pool.query(checkQuery, [Number(id), user.id]);
+    const checkResult = await pool.query(checkQuery, [productoId, user.id]);
 
     if (checkResult.rows.length === 0) {
       return NextResponse.json(
@@ -44,7 +43,7 @@ export async function PUT(
       );
     }
 
-    const stock = checkResult.rows[0].stock;
+    const { stock } = checkResult.rows[0];
 
     if (stock < cantidad) {
       return NextResponse.json(
@@ -53,10 +52,10 @@ export async function PUT(
       );
     }
 
-    // Actualizar cantidad
+    // ✅ Actualizar cantidad
     await pool.query(
-      "UPDATE carrito SET cantidad = $1, fecha_actualizacion = NOW() WHERE id = $2",
-      [cantidad, Number(id)]
+      "UPDATE carrito SET cantidad = $1, fecha_actualizacion = NOW() WHERE producto_id = $2 AND usuario_id = $3",
+      [cantidad, productoId, user.id]
     );
 
     return NextResponse.json({ message: "Cantidad actualizada" });
@@ -81,11 +80,12 @@ export async function DELETE(
   }
 
   const { id } = await context.params;
+  const productoId = Number(id);
 
   try {
     const result = await pool.query(
-      "DELETE FROM carrito WHERE id = $1 AND usuario_id = $2 RETURNING id",
-      [Number(id), user.id]
+      "DELETE FROM carrito WHERE producto_id = $1 AND usuario_id = $2 RETURNING id",
+      [productoId, user.id]
     );
 
     if (result.rows.length === 0) {
