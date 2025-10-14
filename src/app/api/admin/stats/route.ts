@@ -7,126 +7,123 @@ export async function GET(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
   const user = token && verifyJwt(token);
 
-  if (!user || user.rol !== "ADMIN") {
+  if (!user || user.rol !== "admin") {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
   try {
-    // Query para estadísticas de empresas
-    const empresaStatsQuery = `
+    // Estadísticas de productos
+    const productosQuery = `
       SELECT 
-        COUNT(*) as total_empresas,
-        COUNT(*) FILTER (WHERE habilitado = true) as empresas_activas,
-        COUNT(*) FILTER (WHERE destacado = true) as empresas_destacadas,
-        COUNT(*) FILTER (WHERE habilitado = false) as empresas_pendientes,
-        COUNT(*) FILTER (WHERE fecha_creacion >= CURRENT_DATE) as empresas_hoy,
-        COUNT(*) FILTER (WHERE fecha_creacion >= CURRENT_DATE - INTERVAL '7 days') as empresas_semana,
-        COUNT(*) FILTER (WHERE fecha_creacion >= CURRENT_DATE - INTERVAL '30 days') as empresas_mes
-      FROM empresa;
+        COUNT(*) as total_productos,
+        COUNT(*) FILTER (WHERE activo = true) as productos_activos,
+        COUNT(*) FILTER (WHERE destacado = true) as productos_destacados,
+        COUNT(*) FILTER (WHERE stock = 0) as productos_sin_stock,
+        COUNT(*) FILTER (WHERE stock > 0 AND stock <= 5) as productos_stock_bajo,
+        SUM(stock) as stock_total
+      FROM producto;
     `;
 
-    // Query para estadísticas de usuarios
-    const usuarioStatsQuery = `
+    // Estadísticas de pedidos
+    const pedidosQuery = `
+      SELECT 
+        COUNT(*) as total_pedidos,
+        COUNT(*) FILTER (WHERE estado = 'pendiente') as pedidos_pendientes,
+        COUNT(*) FILTER (WHERE estado = 'procesando') as pedidos_procesando,
+        COUNT(*) FILTER (WHERE estado = 'enviado') as pedidos_enviados,
+        COUNT(*) FILTER (WHERE estado = 'entregado') as pedidos_entregados,
+        COUNT(*) FILTER (WHERE fecha_pedido >= CURRENT_DATE) as pedidos_hoy,
+        COUNT(*) FILTER (WHERE fecha_pedido >= CURRENT_DATE - INTERVAL '7 days') as pedidos_semana,
+        COUNT(*) FILTER (WHERE fecha_pedido >= CURRENT_DATE - INTERVAL '30 days') as pedidos_mes,
+        SUM(total) FILTER (WHERE estado != 'cancelado') as ingresos_total,
+        SUM(total) FILTER (WHERE fecha_pedido >= CURRENT_DATE - INTERVAL '30 days' AND estado != 'cancelado') as ingresos_mes
+      FROM pedido;
+    `;
+
+    // Estadísticas de usuarios
+    const usuariosQuery = `
       SELECT 
         COUNT(*) as total_usuarios,
-        COUNT(*) FILTER (WHERE rol = 'ADMIN') as total_admins,
-        COUNT(*) FILTER (WHERE rol = 'EMPRESA') as total_empresa_users
+        COUNT(*) FILTER (WHERE rol = 'admin') as total_admins,
+        COUNT(*) FILTER (WHERE rol = 'cliente') as total_clientes,
+        COUNT(*) FILTER (WHERE fecha_registro >= CURRENT_DATE - INTERVAL '30 days') as usuarios_mes,
+        COUNT(*) FILTER (WHERE activo = true) as usuarios_activos
       FROM usuario;
     `;
 
-    // Query para top provincias
-    const provinciasQuery = `
+    // Productos más vendidos
+    const topProductosQuery = `
       SELECT 
-        provincia,
-        COUNT(*) as count
-      FROM empresa 
-      WHERE provincia IS NOT NULL AND habilitado = true
-      GROUP BY provincia
-      ORDER BY count DESC
+        p.id,
+        p.nombre,
+        p.slug,
+        p.imagen_url,
+        COUNT(dp.id) as veces_vendido,
+        SUM(dp.cantidad) as unidades_vendidas,
+        SUM(dp.subtotal) as ingresos_totales
+      FROM producto p
+      LEFT JOIN detalle_pedido dp ON p.id = dp.producto_id
+      GROUP BY p.id, p.nombre, p.slug, p.imagen_url
+      ORDER BY unidades_vendidas DESC NULLS LAST
       LIMIT 5;
     `;
 
     // Ejecutar todas las queries
-    const [empresaStats, usuarioStats, topProvincias] = await Promise.all([
-      pool.query(empresaStatsQuery),
-      pool.query(usuarioStatsQuery),
-      pool.query(provinciasQuery),
+    const [productos, pedidos, usuarios, topProductos] = await Promise.all([
+      pool.query(productosQuery),
+      pool.query(pedidosQuery),
+      pool.query(usuariosQuery),
+      pool.query(topProductosQuery),
     ]);
 
     const stats = {
-      // Estadísticas de empresas
-      totalEmpresas: parseInt(empresaStats.rows[0].total_empresas),
-      empresasActivas: parseInt(empresaStats.rows[0].empresas_activas),
-      empresasDestacadas: parseInt(empresaStats.rows[0].empresas_destacadas),
-      empresasPendientes: parseInt(empresaStats.rows[0].empresas_pendientes),
-      empresasHoy: parseInt(empresaStats.rows[0].empresas_hoy),
-      empresasSemana: parseInt(empresaStats.rows[0].empresas_semana),
-      empresasMes: parseInt(empresaStats.rows[0].empresas_mes),
+      // Productos
+      total_productos: parseInt(productos.rows[0].total_productos) || 0,
+      productos_activos: parseInt(productos.rows[0].productos_activos) || 0,
+      productos_destacados:
+        parseInt(productos.rows[0].productos_destacados) || 0,
+      productos_sin_stock: parseInt(productos.rows[0].productos_sin_stock) || 0,
+      productos_stock_bajo:
+        parseInt(productos.rows[0].productos_stock_bajo) || 0,
+      stock_total: parseInt(productos.rows[0].stock_total) || 0,
 
-      // Estadísticas de usuarios
-      totalUsuarios: parseInt(usuarioStats.rows[0].total_usuarios),
-      totalAdmins: parseInt(usuarioStats.rows[0].total_admins),
-      totalEmpresaUsers: parseInt(usuarioStats.rows[0].total_empresa_users),
+      // Pedidos
+      total_pedidos: parseInt(pedidos.rows[0].total_pedidos) || 0,
+      pedidos_pendientes: parseInt(pedidos.rows[0].pedidos_pendientes) || 0,
+      pedidos_procesando: parseInt(pedidos.rows[0].pedidos_procesando) || 0,
+      pedidos_enviados: parseInt(pedidos.rows[0].pedidos_enviados) || 0,
+      pedidos_entregados: parseInt(pedidos.rows[0].pedidos_entregados) || 0,
+      pedidos_hoy: parseInt(pedidos.rows[0].pedidos_hoy) || 0,
+      pedidos_semana: parseInt(pedidos.rows[0].pedidos_semana) || 0,
+      pedidos_mes: parseInt(pedidos.rows[0].pedidos_mes) || 0,
 
-      // Top provincias
-      topProvincias: topProvincias.rows,
+      // Ingresos
+      ingresos_total: parseFloat(pedidos.rows[0].ingresos_total) || 0,
+      ingresos_mes: parseFloat(pedidos.rows[0].ingresos_mes) || 0,
+
+      // Usuarios
+      total_usuarios: parseInt(usuarios.rows[0].total_usuarios) || 0,
+      total_admins: parseInt(usuarios.rows[0].total_admins) || 0,
+      total_clientes: parseInt(usuarios.rows[0].total_clientes) || 0,
+      usuarios_mes: parseInt(usuarios.rows[0].usuarios_mes) || 0,
+      usuarios_activos: parseInt(usuarios.rows[0].usuarios_activos) || 0,
+
+      // Top productos
+      top_productos: topProductos.rows.map((p) => ({
+        id: p.id,
+        nombre: p.nombre,
+        slug: p.slug,
+        imagen_url: p.imagen_url,
+        veces_vendido: parseInt(p.veces_vendido) || 0,
+        unidades_vendidas: parseInt(p.unidades_vendidas) || 0,
+        ingresos_totales: parseFloat(p.ingresos_totales) || 0,
+      })),
+
+      // Metadata
+      last_updated: new Date().toISOString(),
     };
 
-    // Obtener actividad reciente (últimas 10 acciones)
-    const activityQuery = `
-      WITH empresa_activity AS (
-        SELECT 
-          'empresa_registrada' as type,
-          'Nueva empresa registrada' as title,
-          nombre || ' se registró' as description,
-          CASE 
-            WHEN fecha_creacion >= NOW() - INTERVAL '1 hour' THEN 'Hace ' || EXTRACT(MINUTE FROM NOW() - fecha_creacion)::int || ' min'
-            WHEN fecha_creacion >= NOW() - INTERVAL '1 day' THEN 'Hace ' || EXTRACT(HOUR FROM NOW() - fecha_creacion)::int || ' h'
-            WHEN fecha_creacion >= NOW() - INTERVAL '7 days' THEN 'Hace ' || EXTRACT(DAY FROM NOW() - fecha_creacion)::int || ' días'
-            ELSE TO_CHAR(fecha_creacion, 'DD/MM/YYYY')
-          END as time,
-          'Building2' as icon,
-          'blue' as color,
-          fecha_creacion as timestamp
-        FROM empresa 
-        WHERE fecha_creacion >= NOW() - INTERVAL '30 days'
-      ),
-      usuario_activity AS (
-        SELECT 
-          'usuario_creado' as type,
-          'Usuario creado' as title,
-          'Se creó cuenta para ' || email as description,
-          CASE 
-            WHEN creado_en >= NOW() - INTERVAL '1 hour' THEN 'Hace ' || EXTRACT(MINUTE FROM NOW() - creado_en)::int || ' min'
-            WHEN creado_en >= NOW() - INTERVAL '1 day' THEN 'Hace ' || EXTRACT(HOUR FROM NOW() - creado_en)::int || ' h'
-            WHEN creado_en >= NOW() - INTERVAL '7 days' THEN 'Hace ' || EXTRACT(DAY FROM NOW() - creado_en)::int || ' días'
-            ELSE TO_CHAR(creado_en, 'DD/MM/YYYY')
-          END as time,
-          'Users' as icon,
-          'green' as color,
-          creado_en as timestamp
-        FROM usuario 
-        WHERE creado_en >= NOW() - INTERVAL '30 days'
-      )
-      SELECT type, title, description, time, icon, color
-      FROM (
-        SELECT * FROM empresa_activity
-        UNION ALL
-        SELECT * FROM usuario_activity
-      ) combined_activity
-      ORDER BY timestamp DESC
-      LIMIT 10;
-    `;
-
-    const { rows: activityRows } = await pool.query(activityQuery);
-
-    const response = {
-      ...stats,
-      recentActivity: activityRows,
-      lastUpdated: new Date().toISOString(),
-    };
-
-    return NextResponse.json(response);
+    return NextResponse.json(stats);
   } catch (error) {
     console.error("❌ Error al obtener estadísticas:", error);
     return NextResponse.json(

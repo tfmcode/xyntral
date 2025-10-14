@@ -3,6 +3,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import LayoutContent from "@/components/layout/LayoutContent";
 import { AuthProvider } from "@/context/AuthContext";
+import { CarritoProvider } from "@/context/CarritoContext";
 import WhatsappFloating from "@/components/ui/WhatsappFloating";
 
 export const metadata: Metadata = {
@@ -86,7 +87,9 @@ export default function RootLayout({
       <body className="bg-white text-gray-900 antialiased">
         <WhatsappFloating />
         <AuthProvider>
-          <LayoutContent>{children}</LayoutContent>
+          <CarritoProvider>
+            <LayoutContent>{children}</LayoutContent>
+          </CarritoProvider>
         </AuthProvider>
       </body>
     </html>

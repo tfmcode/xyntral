@@ -17,6 +17,7 @@
     "gsap": "^3.13.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.510.0",
+    "mercadopago": "^2.9.0",
     "multer": "^2.0.2",
     "next": "15.3.2",
     "nodemailer": "^7.0.9",
