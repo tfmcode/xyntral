@@ -21,28 +21,30 @@ export function middleware(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
 
-  // Rutas privadas para ADMIN
-  if (path.startsWith("/panel/admin") && user.rol !== "ADMIN") {
+  // ✅ Rutas privadas para ADMIN
+  if (path.startsWith("/panel/admin") && user.rol !== "admin") {
     return NextResponse.redirect(new URL("/unauthorized", request.url));
   }
 
-  // Rutas privadas para EMPRESA
-  if (path.startsWith("/panel/empresa") && user.rol !== "EMPRESA") {
+  // ✅ Rutas privadas para CLIENTE (cuenta personal)
+  if (path.startsWith("/cuenta") && user.rol !== "cliente") {
     return NextResponse.redirect(new URL("/unauthorized", request.url));
   }
 
-  // Control de APIs protegidas
+  // ✅ Control de APIs protegidas
   if (path.startsWith("/api/")) {
-    const adminApis = ["/api/admin/", "/api/empresa/admin/", "/api/usuarios"];
-    const empresaApis = ["/api/empresa/me"];
+    const adminApis = ["/api/admin/", "/api/usuarios"];
+    const clienteApis = ["/api/cuenta/", "/api/carrito", "/api/checkout"];
 
-    if (adminApis.some((api) => path.startsWith(api)) && user.rol !== "ADMIN") {
+    // Proteger rutas de admin
+    if (adminApis.some((api) => path.startsWith(api)) && user.rol !== "admin") {
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
 
+    // Proteger rutas de cliente
     if (
-      empresaApis.some((api) => path.startsWith(api)) &&
-      user.rol !== "EMPRESA"
+      clienteApis.some((api) => path.startsWith(api)) &&
+      user.rol !== "cliente"
     ) {
       return NextResponse.json({ message: "No autorizado" }, { status: 403 });
     }
@@ -52,14 +54,14 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // CLAVE: Solo aplicar middleware a rutas que realmente necesitan protección
-  // Esto excluye automáticamente /uploads/, /_next/, y todas las rutas públicas
   matcher: [
-    "/panel/:path*", // Paneles de admin y empresa
+    "/panel/:path*", // Panel de admin
+    "/cuenta/:path*", // Cuenta de cliente
     "/api/admin/:path*", // APIs de admin
-    "/api/empresa/admin/:path*", // APIs de admin de empresa
-    "/api/empresa/me", // API de perfil de empresa
+    "/api/cuenta/:path*", // APIs de cliente
+    "/api/carrito/:path*", // APIs de carrito
+    "/api/checkout/:path*", // APIs de checkout
     "/api/usuarios/:path*", // APIs de usuarios
-    "/api/auth/me", // API de verificación de usuario
+    "/api/auth/me", // API de verificación
   ],
 };

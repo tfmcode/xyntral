@@ -381,10 +381,3 @@ export interface ConfiguracionPagos {
 // =====================================================
 // LEGACY - Mantener para compatibilidad temporal
 // =====================================================
-
-// Tipo legacy de "Empresa" - remover en futuras versiones
-export interface Empresa {
-  id: number;
-  nombre: string;
-  slug?: string;
-}

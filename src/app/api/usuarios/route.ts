@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import { cookies } from "next/headers";
 import { verifyJwt } from "@/lib/auth";
-import { generarSlug } from "@/lib/slugify"; // ✅ Importar función de slug
 import pool from "@/lib/db";
 
 export async function GET() {
@@ -10,15 +9,25 @@ export async function GET() {
   const token = tokenStore.get("token")?.value;
   const user = token && verifyJwt(token);
 
-  if (!user || user.rol !== "ADMIN") {
+  if (!user || user.rol !== "admin") {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
   try {
     const query = `
-      SELECT id, nombre, email, rol, creado_en
+      SELECT 
+        id, 
+        nombre, 
+        apellido, 
+        email, 
+        telefono, 
+        rol, 
+        activo,
+        email_verificado,
+        fecha_registro,
+        ultima_sesion
       FROM usuario
-      ORDER BY creado_en DESC
+      ORDER BY fecha_registro DESC
     `;
     const { rows } = await pool.query(query);
 
@@ -37,17 +46,26 @@ export async function POST(req: Request) {
   const token = tokenStore.get("token")?.value;
   const user = token && verifyJwt(token);
 
-  if (!user || user.rol !== "ADMIN") {
+  if (!user || user.rol !== "admin") {
     return NextResponse.json({ message: "No autorizado" }, { status: 403 });
   }
 
   try {
     const body = await req.json();
-    const { email, nombre, password, rol } = body;
+    const { email, nombre, apellido, telefono, password, rol } = body;
 
-    if (!email || !nombre || !password || !rol) {
+    // ✅ Validaciones
+    if (!email || !nombre || !apellido || !password || !rol) {
       return NextResponse.json(
         { message: "Todos los campos son obligatorios" },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Validar rol válido
+    if (rol !== "admin" && rol !== "cliente") {
+      return NextResponse.json(
+        { message: "Rol inválido. Solo se permite 'admin' o 'cliente'" },
         { status: 400 }
       );
     }
@@ -65,36 +83,25 @@ export async function POST(req: Request) {
 
     const hashed = await bcrypt.hash(password, 10);
 
-    // Insertar el usuario
+    // ✅ Insertar usuario
     const insertQuery = `
-      INSERT INTO usuario (nombre, email, password, rol)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, nombre, email, rol, creado_en
+      INSERT INTO usuario (nombre, apellido, email, telefono, password, rol, activo, email_verificado)
+      VALUES ($1, $2, $3, $4, $5, $6, true, false)
+      RETURNING id, nombre, apellido, email, telefono, rol, activo, email_verificado, fecha_registro
     `;
-    const values = [nombre.trim(), email.trim(), hashed, rol];
+    const values = [
+      nombre.trim(),
+      apellido.trim(),
+      email.trim(),
+      telefono?.trim() || null,
+      hashed,
+      rol,
+    ];
 
     const { rows } = await pool.query(insertQuery, values);
     const nuevoUsuario = rows[0];
 
-    // ✅ FIX: Si el rol es EMPRESA, crear automáticamente en tabla empresa CON SLUG
-    if (rol === "EMPRESA") {
-      const slug = generarSlug(nombre.trim()); // ✅ Generar slug correctamente
-
-      const insertEmpresaQuery = `
-        INSERT INTO empresa (nombre, slug, email, usuario_id, habilitado, destacado)
-        VALUES ($1, $2, $3, $4, true, false)
-      `;
-      await pool.query(insertEmpresaQuery, [
-        nombre.trim(),
-        slug, // ✅ Incluir el slug generado
-        email.trim(),
-        nuevoUsuario.id,
-      ]);
-
-      console.log(
-        `✅ Empresa creada automáticamente con slug: ${slug} para usuario: ${nuevoUsuario.id}`
-      );
-    }
+    console.log(`✅ Usuario ${rol} creado: ${nuevoUsuario.email}`);
 
     return NextResponse.json(nuevoUsuario, { status: 201 });
   } catch (error) {

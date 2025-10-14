@@ -4,11 +4,32 @@ import { useEffect, useState } from "react";
 import DataTable from "@/components/ui/DataTable";
 import Modal from "@/components/ui/Modal";
 import FormField from "@/components/ui/FormField";
-import type { Usuario, UsuarioInput } from "@/types/usuario";
 import axios from "axios";
 import { Users, Plus, AlertCircle, Mail, Calendar, User } from "lucide-react";
 
-// Extender Usuario para que sea compatible con DataTable
+// ✅ Tipos actualizados para e-commerce
+interface Usuario {
+  id: number;
+  nombre: string;
+  apellido: string;
+  email: string;
+  telefono?: string;
+  rol: "admin" | "cliente";
+  activo: boolean;
+  email_verificado: boolean;
+  fecha_registro: string;
+  ultima_sesion?: string;
+}
+
+interface UsuarioInput {
+  nombre: string;
+  apellido: string;
+  email: string;
+  telefono?: string;
+  password: string;
+  rol: "admin" | "cliente";
+}
+
 type UsuarioWithIndex = Usuario & Record<string, unknown>;
 
 export default function UsuariosAdminPage() {
@@ -16,9 +37,11 @@ export default function UsuariosAdminPage() {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [form, setForm] = useState<UsuarioInput>({
     nombre: "",
+    apellido: "",
     email: "",
+    telefono: "",
     password: "",
-    rol: "ADMIN",
+    rol: "cliente",
   });
   const [modoEdicion, setModoEdicion] = useState(false);
   const [usuarioIdEditar, setUsuarioIdEditar] = useState<number | null>(null);
@@ -52,13 +75,18 @@ export default function UsuariosAdminPage() {
   ) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
-
-    // Limpiar errores al editar
     if (error) setError("");
   };
 
   const abrirNuevo = () => {
-    setForm({ nombre: "", email: "", password: "", rol: "ADMIN" });
+    setForm({
+      nombre: "",
+      apellido: "",
+      email: "",
+      telefono: "",
+      password: "",
+      rol: "cliente",
+    });
     setUsuarioIdEditar(null);
     setModoEdicion(false);
     setError("");
@@ -69,7 +97,9 @@ export default function UsuariosAdminPage() {
   const abrirEditar = (usuario: UsuarioWithIndex) => {
     setForm({
       nombre: usuario.nombre,
+      apellido: usuario.apellido,
       email: usuario.email,
+      telefono: usuario.telefono || "",
       password: "",
       rol: usuario.rol,
     });
@@ -85,6 +115,10 @@ export default function UsuariosAdminPage() {
       setError("El nombre es obligatorio.");
       return false;
     }
+    if (!form.apellido.trim()) {
+      setError("El apellido es obligatorio.");
+      return false;
+    }
     if (!form.email.trim()) {
       setError("El email es obligatorio.");
       return false;
@@ -93,12 +127,12 @@ export default function UsuariosAdminPage() {
       setError("El email debe tener un formato válido.");
       return false;
     }
-    if (!modoEdicion && form.password.length < 4) {
-      setError("La contraseña debe tener al menos 4 caracteres.");
+    if (!modoEdicion && form.password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.");
       return false;
     }
-    if (modoEdicion && form.password && form.password.length < 4) {
-      setError("Si cambias la contraseña, debe tener al menos 4 caracteres.");
+    if (modoEdicion && form.password && form.password.length < 6) {
+      setError("Si cambias la contraseña, debe tener al menos 6 caracteres.");
       return false;
     }
     return true;
@@ -127,8 +161,7 @@ export default function UsuariosAdminPage() {
     } catch (err: unknown) {
       console.error("Error al guardar usuario:", err);
 
-      let errorMessage =
-        "Error al guardar usuario. Verifica que el email no esté ya registrado.";
+      let errorMessage = "Error al guardar usuario. Verifica los datos.";
 
       if (
         err &&
@@ -154,7 +187,7 @@ export default function UsuariosAdminPage() {
   const eliminar = async (usuario: UsuarioWithIndex) => {
     if (
       !confirm(
-        `¿Eliminar al usuario "${usuario.nombre}"?\n\nEsta acción no se puede deshacer.`
+        `¿Eliminar al usuario "${usuario.nombre} ${usuario.apellido}"?\n\nEsta acción no se puede deshacer.`
       )
     ) {
       return;
@@ -170,10 +203,10 @@ export default function UsuariosAdminPage() {
     }
   };
 
+  // ✅ Solo roles de e-commerce
   const rolOptions = [
-    { value: "ADMIN", label: "Administrador" },
-    { value: "EMPRESA", label: "Empresa" },
-    { value: "USUARIO", label: "Usuario" },
+    { value: "admin", label: "Administrador" },
+    { value: "cliente", label: "Cliente" },
   ];
 
   const formatearFecha = (fecha: string) => {
@@ -184,12 +217,11 @@ export default function UsuariosAdminPage() {
     });
   };
 
-  // ✅ MEJORADO: Render de rol con mejor diseño
+  // ✅ Render de rol actualizado
   const renderRol = (usuario: UsuarioWithIndex) => {
     const colores = {
-      ADMIN: "bg-red-100 text-red-800 border-red-200",
-      EMPRESA: "bg-blue-100 text-blue-800 border-blue-200",
-      USUARIO: "bg-gray-100 text-gray-800 border-gray-200",
+      admin: "bg-red-100 text-red-800 border-red-200",
+      cliente: "bg-blue-100 text-blue-800 border-blue-200",
     };
 
     return (
@@ -198,17 +230,18 @@ export default function UsuariosAdminPage() {
           colores[usuario.rol]
         }`}
       >
-        {usuario.rol}
+        {usuario.rol === "admin" ? "Administrador" : "Cliente"}
       </span>
     );
   };
 
-  // ✅ NUEVO: Render de nombre con email
   const renderNombreConEmail = (usuario: UsuarioWithIndex) => (
     <div className="space-y-1">
       <div className="font-semibold text-gray-900 text-sm flex items-center gap-2">
         <User size={14} className="text-gray-500" />
-        <span className="truncate max-w-[180px]">{usuario.nombre}</span>
+        <span className="truncate max-w-[180px]">
+          {usuario.nombre} {usuario.apellido}
+        </span>
       </div>
       <div className="flex items-center gap-1 text-xs text-gray-500">
         <Mail size={12} />
@@ -217,22 +250,20 @@ export default function UsuariosAdminPage() {
     </div>
   );
 
-  // ✅ NUEVO: Render de fecha mejorado
   const renderFechaCreacion = (usuario: UsuarioWithIndex) => (
     <div className="flex items-center gap-2 text-sm text-gray-600">
       <Calendar size={14} className="text-gray-400" />
-      <span>{formatearFecha(usuario.creado_en)}</span>
+      <span>{formatearFecha(usuario.fecha_registro)}</span>
     </div>
   );
 
-  // Convertir usuarios para compatibilidad con DataTable
   const usuariosConIndex: UsuarioWithIndex[] = usuarios.map((usuario) => ({
     ...usuario,
   }));
 
   return (
     <div className="space-y-6">
-      {/* ✅ MEJORADO: Header más profesional */}
+      {/* Header */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -244,7 +275,7 @@ export default function UsuariosAdminPage() {
                 Gestión de Usuarios
               </h1>
               <p className="text-gray-600 mt-1">
-                Administra las cuentas de usuario del sistema
+                Administra clientes y administradores del sistema
               </p>
             </div>
           </div>
@@ -280,11 +311,11 @@ export default function UsuariosAdminPage() {
         </div>
       )}
 
-      {/* ✅ NUEVO: DataTable con columnas optimizadas */}
+      {/* DataTable */}
       <DataTable<UsuarioWithIndex>
         data={usuariosConIndex}
         loading={tableLoading}
-        searchKeys={["nombre", "email"]}
+        searchKeys={["nombre", "apellido", "email"]}
         columns={[
           {
             key: "nombre",
@@ -292,17 +323,17 @@ export default function UsuariosAdminPage() {
             sortable: true,
             render: renderNombreConEmail,
             width: "min-w-[220px]",
-            sticky: true, // ✅ Columna fija para mejor navegación
+            sticky: true,
           },
           {
             key: "rol",
-            label: "Rol y Permisos",
+            label: "Rol",
             sortable: true,
             render: renderRol,
             width: "min-w-[140px]",
           },
           {
-            key: "creado_en",
+            key: "fecha_registro",
             label: "Fecha de Registro",
             sortable: true,
             render: renderFechaCreacion,
@@ -314,7 +345,7 @@ export default function UsuariosAdminPage() {
         pageSize={15}
       />
 
-      {/* ✅ MEJORADO: Modal más espacioso */}
+      {/* Modal */}
       <Modal
         isOpen={modalAbierto}
         onClose={() => setModalAbierto(false)}
@@ -348,18 +379,30 @@ export default function UsuariosAdminPage() {
               </div>
             )}
 
-            {/* ✅ MEJORADO: Campos organizados */}
+            {/* Campos */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
-                label="Nombre completo"
+                label="Nombre"
                 name="nombre"
                 value={form.nombre}
                 onChange={handleChange}
-                placeholder="Ej: Juan Pérez"
+                placeholder="Ej: Juan"
                 required
                 disabled={loading}
               />
 
+              <FormField
+                label="Apellido"
+                name="apellido"
+                value={form.apellido}
+                onChange={handleChange}
+                placeholder="Ej: Pérez"
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 label="Email"
                 name="email"
@@ -368,6 +411,15 @@ export default function UsuariosAdminPage() {
                 type="email"
                 placeholder="usuario@example.com"
                 required
+                disabled={loading}
+              />
+
+              <FormField
+                label="Teléfono (opcional)"
+                name="telefono"
+                value={form.telefono}
+                onChange={handleChange}
+                placeholder="+54 11 1234-5678"
                 disabled={loading}
               />
             </div>
@@ -384,14 +436,14 @@ export default function UsuariosAdminPage() {
                 placeholder={
                   modoEdicion
                     ? "Dejar vacío para mantener actual"
-                    : "Mínimo 4 caracteres"
+                    : "Mínimo 6 caracteres"
                 }
                 required={!modoEdicion}
                 disabled={loading}
                 helperText={
                   modoEdicion
                     ? "Solo completar si quieres cambiar la contraseña"
-                    : "La contraseña debe tener al menos 4 caracteres"
+                    : "La contraseña debe tener al menos 6 caracteres"
                 }
               />
 
@@ -404,37 +456,34 @@ export default function UsuariosAdminPage() {
                 options={rolOptions}
                 required
                 disabled={loading}
-                helperText="Determina los permisos del usuario en el sistema"
+                helperText="Define los permisos del usuario"
               />
             </div>
 
-            {/* ✅ NUEVO: Información sobre roles */}
+            {/* ✅ Información sobre roles actualizada */}
             <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
               <h3 className="text-sm font-semibold text-blue-900 mb-3">
                 Información sobre roles
               </h3>
               <div className="space-y-2 text-sm text-blue-800">
-                <div className="flex items-center gap-2">
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
                   <span>
-                    <strong>ADMIN:</strong> Acceso completo al sistema
+                    <strong>Administrador:</strong> Acceso completo al sistema.
+                    Puede gestionar productos, pedidos, categorías y usuarios.
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
                   <span>
-                    <strong>EMPRESA:</strong> Puede gestionar su perfil de
-                    empresa
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span>
-                    <strong>USUARIO:</strong> Acceso básico (reservado para
-                    futuro)
+                    <strong>Cliente:</strong> Puede realizar compras, ver su
+                    historial de pedidos y gestionar su perfil personal.
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* ✅ MEJORADO: Botones más profesionales */}
+            {/* Botones */}
             <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-gray-200">
               <button
                 type="button"

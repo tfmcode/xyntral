@@ -18,7 +18,7 @@ interface Column<T> {
   sortable?: boolean;
   render?: (item: T) => React.ReactNode;
   width?: string;
-  sticky?: boolean; // ✅ NUEVO: Para columnas fijas
+  sticky?: boolean;
 }
 
 interface Props<T extends Record<string, unknown>> {
@@ -26,7 +26,7 @@ interface Props<T extends Record<string, unknown>> {
   columns: Column<T>[];
   onEdit?: (item: T) => void;
   onDelete?: (item: T) => void;
-  onView?: (item: T) => void; // ✅ NUEVO: Opción para ver detalles
+  onView?: (item: T) => void;
   searchable?: boolean;
   searchKeys?: (keyof T)[];
   pageSize?: number;
@@ -176,7 +176,7 @@ export default function DataTable<T extends Record<string, unknown>>({
 
   return (
     <div className="space-y-6">
-      {/* ✅ MEJORADO: Header más espacioso */}
+      {/* Header */}
       <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-3 text-sm text-gray-600">
@@ -200,7 +200,7 @@ export default function DataTable<T extends Record<string, unknown>>({
               />
               <input
                 type="text"
-                placeholder="Buscar empresas..."
+                placeholder="Buscar..."
                 value={busqueda}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full lg:w-80 bg-gray-50 focus:bg-white transition-all"
@@ -210,13 +210,11 @@ export default function DataTable<T extends Record<string, unknown>>({
         </div>
       </div>
 
-      {/* ✅ MEJORADO: Contenedor de tabla con mejor scroll */}
+      {/* Tabla */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
-        {/* ✅ NUEVO: Scroll horizontal mejorado */}
         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
           <div className="min-w-full">
             <table className="w-full divide-y divide-gray-200">
-              {/* ✅ MEJORADO: Header más visible */}
               <thead className="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
                 <tr>
                   {columns.map((col) => (
@@ -269,7 +267,6 @@ export default function DataTable<T extends Record<string, unknown>>({
                 </tr>
               </thead>
 
-              {/* ✅ MEJORADO: Body con mejor espaciado */}
               <tbody className="bg-white divide-y divide-gray-100">
                 {loading ? (
                   <LoadingSkeleton />
@@ -334,7 +331,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                             {onView && (
                               <button
                                 onClick={() => onView(item)}
-                                className="p-2.5 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-all duration-200 group/btn"
+                                className="p-2.5 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-all duration-200"
                                 title="Ver detalles"
                               >
                                 <Eye size={16} />
@@ -343,7 +340,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                             {onEdit && (
                               <button
                                 onClick={() => onEdit(item)}
-                                className="p-2.5 text-gray-500 hover:text-green-600 hover:bg-green-100 rounded-lg transition-all duration-200 group/btn"
+                                className="p-2.5 text-gray-500 hover:text-green-600 hover:bg-green-100 rounded-lg transition-all duration-200"
                                 title="Editar"
                               >
                                 <Pencil size={16} />
@@ -352,7 +349,7 @@ export default function DataTable<T extends Record<string, unknown>>({
                             {onDelete && (
                               <button
                                 onClick={() => onDelete(item)}
-                                className="p-2.5 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 group/btn"
+                                className="p-2.5 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200"
                                 title="Eliminar"
                               >
                                 <Trash2 size={16} />
@@ -369,7 +366,7 @@ export default function DataTable<T extends Record<string, unknown>>({
           </div>
         </div>
 
-        {/* ✅ MEJORADO: Paginación integrada */}
+        {/* Paginación */}
         {totalPages > 1 && !loading && (
           <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -435,7 +432,7 @@ export default function DataTable<T extends Record<string, unknown>>({
         )}
       </div>
 
-      {/* ✅ NUEVO: Estilos para scrollbar personalizado */}
+      {/* Estilos para scrollbar */}
       <style jsx global>{`
         .scrollbar-thin {
           scrollbar-width: thin;
