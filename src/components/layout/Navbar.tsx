@@ -3,22 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Search,
-  ShoppingCart,
-  Menu,
-  X,
-  User,
-  ChevronDown,
-  Package,
-} from "lucide-react";
+import { Search, ShoppingCart, Menu, X, User, Package } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const Navbar = () => {
   const pathname = usePathname();
   const { user } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
-  const [showCategorias, setShowCategorias] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [cartCount, setCartCount] = useState(0);
 
@@ -36,13 +27,6 @@ const Navbar = () => {
     // Placeholder - implementar cuando tengamos el contexto del carrito
     setCartCount(0);
   }, []);
-
-  const categorias = [
-    { nombre: "Soportes para Celular", slug: "soportes-celular" },
-    { nombre: "Soportes para Tablet", slug: "soportes-tablet" },
-    { nombre: "Soportes para Notebook", slug: "soportes-notebook" },
-    { nombre: "Accesorios", slug: "accesorios" },
-  ];
 
   const isActive = (path: string) => pathname === path;
 
@@ -116,44 +100,16 @@ const Navbar = () => {
               Productos
             </Link>
 
-            {/* Categorías Dropdown */}
-            <div
-              className="relative"
-              onMouseEnter={() => setShowCategorias(true)}
-              onMouseLeave={() => setShowCategorias(false)}
+            <Link
+              href="/sobre-nosotros"
+              className={`font-medium transition-colors ${
+                isActive("/sobre-nosotros")
+                  ? "text-blue-600"
+                  : "text-gray-700 hover:text-blue-600"
+              }`}
             >
-              <button className="flex items-center gap-1 font-medium text-gray-700 hover:text-blue-600 transition-colors">
-                Categorías
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform ${
-                    showCategorias ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {/* Dropdown Menu */}
-              {showCategorias && (
-                <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 animate-fade-in">
-                  {categorias.map((cat) => (
-                    <Link
-                      key={cat.slug}
-                      href={`/productos?categoria=${cat.slug}`}
-                      className="block px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                    >
-                      {cat.nombre}
-                    </Link>
-                  ))}
-                  <div className="border-t border-gray-100 mt-2 pt-2">
-                    <Link
-                      href="/productos"
-                      className="block px-4 py-3 text-blue-600 font-medium hover:bg-blue-50 transition-colors"
-                    >
-                      Ver todos →
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </div>
+              Sobre Nosotros
+            </Link>
           </nav>
 
           {/* Actions */}
@@ -185,12 +141,12 @@ const Navbar = () => {
             {user ? (
               <div className="hidden lg:flex items-center gap-2">
                 <Link
-                  href="/cuenta"
+                  href={user.rol === "admin" ? "/admin" : "/cuenta"}
                   className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-gray-100 transition-colors"
                 >
                   <User className="w-5 h-5 text-gray-700" />
                   <span className="text-sm font-medium text-gray-700">
-                    Mi Cuenta
+                    {user.rol === "admin" ? "Admin" : "Mi Cuenta"}
                   </span>
                 </Link>
               </div>
@@ -259,25 +215,6 @@ const Navbar = () => {
               Productos
             </Link>
 
-            {/* Categorías Mobile */}
-            <div className="px-4 py-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                Categorías
-              </p>
-              <div className="space-y-1 pl-2">
-                {categorias.map((cat) => (
-                  <Link
-                    key={cat.slug}
-                    href={`/productos?categoria=${cat.slug}`}
-                    onClick={() => setShowMenu(false)}
-                    className="block py-2 text-gray-600 hover:text-blue-600 transition-colors"
-                  >
-                    {cat.nombre}
-                  </Link>
-                ))}
-              </div>
-            </div>
-
             <Link
               href="/sobre-nosotros"
               onClick={() => setShowMenu(false)}
@@ -299,19 +236,21 @@ const Navbar = () => {
               {user ? (
                 <>
                   <Link
-                    href="/cuenta"
+                    href={user.rol === "admin" ? "/admin" : "/cuenta"}
                     onClick={() => setShowMenu(false)}
                     className="block px-4 py-3 rounded-lg bg-gray-100 text-gray-700 font-medium text-center"
                   >
-                    Mi Cuenta
+                    {user.rol === "admin" ? "Panel Admin" : "Mi Cuenta"}
                   </Link>
-                  <Link
-                    href="/cuenta/pedidos"
-                    onClick={() => setShowMenu(false)}
-                    className="block px-4 py-3 rounded-lg text-gray-700 text-center"
-                  >
-                    Mis Pedidos
-                  </Link>
+                  {user.rol === "cliente" && (
+                    <Link
+                      href="/cuenta/pedidos"
+                      onClick={() => setShowMenu(false)}
+                      className="block px-4 py-3 rounded-lg text-gray-700 text-center"
+                    >
+                      Mis Pedidos
+                    </Link>
+                  )}
                 </>
               ) : (
                 <>

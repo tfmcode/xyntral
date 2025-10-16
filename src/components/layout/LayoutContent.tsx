@@ -10,7 +10,9 @@ export default function LayoutContent({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const ocultarLayout = pathname.startsWith("/panel");
+
+  const ocultarLayout =
+    pathname.startsWith("/admin") || pathname.startsWith("/cuenta");
 
   return (
     <>
