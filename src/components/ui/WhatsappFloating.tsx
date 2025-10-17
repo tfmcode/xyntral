@@ -4,8 +4,8 @@ import React from "react";
 import Image from "next/image";
 
 const WhatsappFloating: React.FC = () => {
-  const phone = "5491155646135";
-  const message = "Hola! Estoy viendo su web y quiero hacer una consulta.";
+  const phone = "5491168896621";
+  const message = "Hola! Quiero consultar sobre los productos de xyntral";
 
   return (
     <a

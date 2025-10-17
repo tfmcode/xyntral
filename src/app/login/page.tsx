@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
-export default function LoginPage() {
+// Evita prerender en /login (rápido y seguro para prod)
+export const dynamic = "force-dynamic";
+
+function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -37,14 +40,13 @@ export default function LoginPage() {
 
       const { usuario } = await res.json();
 
-      // ✅ Actualizar contexto
+      // Actualizar contexto
       login(usuario);
 
-      // ✅ Redirigir según rol
+      // Redirección por rol
       if (usuario.rol === "admin") {
         router.push("/admin");
       } else if (usuario.rol === "cliente") {
-        // Si venía de checkout u otra página, redirigir ahí
         router.push(redirect !== "/" ? redirect : "/cuenta");
       } else {
         router.push("/");
@@ -129,7 +131,7 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          {/* Submit button */}
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
@@ -198,5 +200,14 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  // ✅ Suspense obligatorio cuando se usa useSearchParams en un client component
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   );
 }

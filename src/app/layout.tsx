@@ -8,6 +8,7 @@ import WhatsappFloating from "@/components/ui/WhatsappFloating";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://xyntral.com.ar"),
   title: "Xyntral - Soportes para Celular, Tablet y Notebook",
   description:
     "Tecnología útil y funcional para tu día a día. Soportes de calidad para todos tus dispositivos. Envío gratis desde la segunda unidad.",
