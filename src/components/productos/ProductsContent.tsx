@@ -49,25 +49,34 @@ export default function ProductsContent() {
 
   // ✅ Cargar categorías (una sola vez)
   useEffect(() => {
-    let abort = false;
+    const controller = new AbortController();
+
     (async () => {
       try {
-        const res = await fetch("/api/categorias", { cache: "no-store" });
+        const res = await fetch("/api/categorias", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
         if (!res.ok) return;
         const data = await res.json();
-        if (!abort && data.success && Array.isArray(data.data)) {
+        if (data.success && Array.isArray(data.data)) {
           setCategorias(data.data);
         }
       } catch (err) {
+        // ✅ Ignorar errores de abort
+        if (err instanceof Error && err.name === "AbortError") {
+          return;
+        }
         console.error("Error al cargar categorías:", err);
       }
     })();
+
     return () => {
-      abort = true;
+      controller.abort();
     };
   }, []);
 
-  // ✅ Cargar productos cuando cambie la query (sin useCallback)
+  // ✅ Cargar productos cuando cambie la query
   useEffect(() => {
     const controller = new AbortController();
 
@@ -90,11 +99,13 @@ export default function ProductsContent() {
           headers: { "X-Requested-With": "products-client" },
           signal: controller.signal,
         });
+
         if (!res.ok) {
           console.error("Respuesta no OK:", res.status);
           setProductos([]);
           return;
         }
+
         const data = await res.json();
         if (data.success && Array.isArray(data.data)) {
           setProductos(data.data);
@@ -103,17 +114,21 @@ export default function ProductsContent() {
           setProductos([]);
         }
       } catch (err) {
-        if (err) {
-          console.error("Error al cargar productos:", err);
-          setProductos([]);
+        // ✅ FIX: Ignorar errores de abort específicamente
+        if (err instanceof Error && err.name === "AbortError") {
+          console.log("Fetch cancelado correctamente");
+          return;
         }
+        console.error("Error al cargar productos:", err);
+        setProductos([]);
       } finally {
-        // El abort también entra acá, pero no rompe nada
         setLoading(false);
       }
     })();
 
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+    };
   }, [sp, filtros]);
 
   // ✅ Calcular rango de precios a partir de lo cargado

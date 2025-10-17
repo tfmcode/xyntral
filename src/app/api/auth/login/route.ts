@@ -1,6 +1,6 @@
 // src/app/api/auth/login/route.ts
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import { cookies } from "next/headers";
 import { signJwt } from "@/lib/auth";
 import pool from "@/lib/db";

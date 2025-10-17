@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import { Search, ShoppingCart, Menu, X, User, Package } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -50,29 +51,33 @@ const Navbar = () => {
             <span>Pagos seguros con Mercado Pago</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link
-              href="/sobre-nosotros"
+            <a
+              href="#sobre-nosotros"
               className="text-gray-600 hover:text-blue-600 transition-colors"
             >
               Sobre Nosotros
-            </Link>
-            <Link
-              href="/preguntas-frecuentes"
+            </a>
+            <a
+              href="#preguntas-frecuentes"
               className="text-gray-600 hover:text-blue-600 transition-colors"
             >
               FAQ
-            </Link>
+            </a>
           </div>
         </div>
 
         {/* Main navbar */}
         <div className="flex items-center justify-between h-20 lg:h-24">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="text-2xl lg:text-3xl font-extrabold">
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                xyntral
-              </span>
+          <Link href="/" className="flex items-center group">
+            <div className="relative w-48 h-16 sm:w-56 sm:h-20 md:w-64 md:h-22 lg:w-72 lg:h-24">
+              <Image
+                src="/LogoTrs.png"
+                alt="Xyntral Logo"
+                fill
+                className="object-contain"
+                priority
+              />
             </div>
           </Link>
 
@@ -100,8 +105,8 @@ const Navbar = () => {
               Productos
             </Link>
 
-            <Link
-              href="/sobre-nosotros"
+            <a
+              href="#sobre-nosotros"
               className={`font-medium transition-colors ${
                 isActive("/sobre-nosotros")
                   ? "text-blue-600"
@@ -109,7 +114,7 @@ const Navbar = () => {
               }`}
             >
               Sobre Nosotros
-            </Link>
+            </a>
           </nav>
 
           {/* Actions */}
@@ -215,21 +220,21 @@ const Navbar = () => {
               Productos
             </Link>
 
-            <Link
-              href="/sobre-nosotros"
+            <a
+              href="#sobre-nosotros"
               onClick={() => setShowMenu(false)}
               className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Sobre Nosotros
-            </Link>
+            </a>
 
-            <Link
-              href="/preguntas-frecuentes"
+            <a
+              href="#preguntas-frecuentes"
               onClick={() => setShowMenu(false)}
               className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Preguntas Frecuentes
-            </Link>
+            </a>
 
             {/* User actions mobile */}
             <div className="pt-4 border-t border-gray-200 space-y-2">

@@ -21,7 +21,6 @@ interface CheckoutForm {
   provincia: string;
   codigo_postal: string;
   referencias?: string;
-  metodo_pago: "mercadopago" | "transferencia";
 }
 
 export default function CheckoutPage() {
@@ -37,7 +36,6 @@ export default function CheckoutPage() {
     provincia: "",
     codigo_postal: "",
     referencias: "",
-    metodo_pago: "mercadopago",
   });
 
   const [loading, setLoading] = useState(false);
@@ -63,7 +61,7 @@ export default function CheckoutPage() {
       setForm((prev) => ({
         ...prev,
         nombre_contacto: user.nombre
-          ? `${user.nombre} ${user.apellido || ""}`
+          ? `${user.nombre} ${user.apellido || ""}`.trim()
           : "",
         telefono_contacto: user.telefono || "",
       }));
@@ -71,9 +69,7 @@ export default function CheckoutPage() {
   }, [user]);
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -117,6 +113,8 @@ export default function CheckoutPage() {
     setError("");
 
     try {
+      console.log("🛒 Iniciando proceso de checkout...");
+
       // Crear pedido y preferencia de MP
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -128,7 +126,7 @@ export default function CheckoutPage() {
             cantidad: item.cantidad,
           })),
           direccion: form,
-          metodo_pago: form.metodo_pago,
+          metodo_pago: "mercadopago", // Siempre Mercado Pago
         }),
       });
 
@@ -138,26 +136,28 @@ export default function CheckoutPage() {
       }
 
       const data = await response.json();
+      console.log("✅ Respuesta del servidor:", data);
 
-      if (form.metodo_pago === "mercadopago") {
-        // Redirigir a Mercado Pago
-        if (data.init_point) {
-          vaciarCarrito();
-          window.location.href = data.init_point;
-        } else {
-          throw new Error("No se pudo generar el link de pago");
-        }
-      } else {
-        // Transferencia bancaria
-        vaciarCarrito();
-        router.push(`/pedido/${data.pedido_id}/transferencia`);
+      // Verificar que tengamos el init_point
+      if (!data.init_point) {
+        console.error("❌ No se recibió init_point:", data);
+        throw new Error("No se pudo generar el link de pago de Mercado Pago");
       }
+
+      console.log("🔗 Redirigiendo a Mercado Pago:", data.init_point);
+
+      // Vaciar carrito antes de redirigir
+      vaciarCarrito();
+
+      // Redirigir a Mercado Pago
+      window.location.href = data.init_point;
     } catch (err) {
-      console.error("Error en checkout:", err);
+      console.error("❌ Error en checkout:", err);
       setError(
-        err instanceof Error ? err.message : "Error al procesar el pedido"
+        err instanceof Error
+          ? err.message
+          : "Error al procesar el pedido. Por favor, intentá nuevamente."
       );
-    } finally {
       setLoading(false);
     }
   };
@@ -327,25 +327,17 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Método de pago */}
+              {/* Método de pago - Solo Mercado Pago */}
               <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
                   <CreditCard size={20} className="text-purple-600" />
                   Método de Pago
                 </h2>
 
-                <div className="space-y-3">
-                  <label className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50">
-                    <input
-                      type="radio"
-                      name="metodo_pago"
-                      value="mercadopago"
-                      checked={form.metodo_pago === "mercadopago"}
-                      onChange={handleChange}
-                      className="w-5 h-5"
-                    />
+                <div className="p-4 border-2 border-blue-600 bg-blue-50 rounded-lg">
+                  <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <div className="font-semibold text-gray-900">
+                      <div className="font-semibold text-gray-900 mb-1">
                         Mercado Pago
                       </div>
                       <div className="text-sm text-gray-600">
@@ -353,34 +345,15 @@ export default function CheckoutPage() {
                         interés
                       </div>
                     </div>
-                    <img
-                      src="/mp-logo.png"
-                      alt="Mercado Pago"
-                      className="h-6"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
-                    />
-                  </label>
-
-                  <label className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50">
-                    <input
-                      type="radio"
-                      name="metodo_pago"
-                      value="transferencia"
-                      checked={form.metodo_pago === "transferencia"}
-                      onChange={handleChange}
-                      className="w-5 h-5"
-                    />
-                    <div className="flex-1">
-                      <div className="font-semibold text-gray-900">
-                        Transferencia Bancaria
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Te enviaremos los datos para realizar la transferencia
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <CreditCard size={24} className="text-blue-600" />
                     </div>
-                  </label>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center gap-2 text-xs text-gray-600">
+                  <Lock size={12} className="text-green-600" />
+                  <span>Pago 100% seguro procesado por Mercado Pago</span>
                 </div>
               </div>
             </div>
@@ -461,7 +434,7 @@ export default function CheckoutPage() {
                   ) : (
                     <>
                       <Lock size={20} />
-                      Finalizar Compra
+                      Pagar con Mercado Pago
                     </>
                   )}
                 </button>

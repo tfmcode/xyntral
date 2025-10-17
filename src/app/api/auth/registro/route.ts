@@ -1,6 +1,6 @@
 // src/app/api/auth/registro/route.ts
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import pool from "@/lib/db";
 import { z } from "zod";
 
