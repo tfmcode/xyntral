@@ -16,16 +16,13 @@ const Navbar = () => {
 
   // Detectar scroll para cambiar estilo
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // TODO: Obtener cantidad de items del carrito desde el contexto/API
   useEffect(() => {
-    // Placeholder - implementar cuando tengamos el contexto del carrito
     setCartCount(0);
   }, []);
 
@@ -51,18 +48,18 @@ const Navbar = () => {
             <span>Pagos seguros con Mercado Pago</span>
           </div>
           <div className="flex items-center gap-4">
-            <a
-              href="#sobre-nosotros"
+            <Link
+              href="/#sobre-nosotros"
               className="text-gray-600 hover:text-blue-600 transition-colors"
             >
               Sobre Nosotros
-            </a>
-            <a
-              href="#preguntas-frecuentes"
+            </Link>
+            <Link
+              href="/#preguntas-frecuentes"
               className="text-gray-600 hover:text-blue-600 transition-colors"
             >
               FAQ
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -105,16 +102,12 @@ const Navbar = () => {
               Productos
             </Link>
 
-            <a
-              href="#sobre-nosotros"
-              className={`font-medium transition-colors ${
-                isActive("/sobre-nosotros")
-                  ? "text-blue-600"
-                  : "text-gray-700 hover:text-blue-600"
-              }`}
+            <Link
+              href="/#sobre-nosotros"
+              className="font-medium transition-colors text-gray-700 hover:text-blue-600"
             >
               Sobre Nosotros
-            </a>
+            </Link>
           </nav>
 
           {/* Actions */}
@@ -220,21 +213,21 @@ const Navbar = () => {
               Productos
             </Link>
 
-            <a
-              href="#sobre-nosotros"
+            <Link
+              href="/#sobre-nosotros"
               onClick={() => setShowMenu(false)}
               className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Sobre Nosotros
-            </a>
+            </Link>
 
-            <a
-              href="#preguntas-frecuentes"
+            <Link
+              href="/#preguntas-frecuentes"
               onClick={() => setShowMenu(false)}
               className="block px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Preguntas Frecuentes
-            </a>
+            </Link>
 
             {/* User actions mobile */}
             <div className="pt-4 border-t border-gray-200 space-y-2">

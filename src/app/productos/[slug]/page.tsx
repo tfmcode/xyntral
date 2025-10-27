@@ -19,6 +19,42 @@ interface ProductDetailProps {
   params: Promise<{ slug: string }>;
 }
 
+/* =======================
+   Helpers imágenes
+======================= */
+function parsePgTextArray(value: unknown): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean) as string[];
+  if (typeof value === "string") {
+    // Formatos típicos: "{/img/a.jpg,/img/b.jpg}" o '["/img/a.jpg","/img/b.jpg"]'
+    const s = value.trim();
+    if (!s) return [];
+    // Quitar llaves { } o [ ]
+    const trimmed = s.replace(/^[{\[]|[}\]]$/g, "");
+    if (!trimmed) return [];
+    return trimmed
+      .split(",")
+      .map((x) => x.replace(/^"+|"+$/g, "").trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function buildFallbackFromSlug(slug: string, count = 6): string[] {
+  // Genera /img/productos/<slug>-1.jpg ... -6.jpg
+  return Array.from(
+    { length: count },
+    (_, i) => `/img/productos/${slug}-${i + 1}.jpg`
+  );
+}
+
+function unique<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr));
+}
+
+/* =======================
+   Fetch producto
+======================= */
 // Función para obtener el producto (temporal - reemplazar con API real)
 async function getProductoBySlug(slug: string) {
   try {
@@ -26,16 +62,9 @@ async function getProductoBySlug(slug: string) {
       `${
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
       }/api/productos/${slug}`,
-      {
-        cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache",
-        },
-      }
+      { cache: "no-store", headers: { "Cache-Control": "no-cache" } }
     );
-
     if (!res.ok) return null;
-
     const data = await res.json();
     return data.success ? data.data : null;
   } catch (error) {
@@ -51,9 +80,7 @@ export async function generateMetadata({
   const producto = await getProductoBySlug(slug);
 
   if (!producto) {
-    return {
-      title: "Producto no encontrado - xyntral",
-    };
+    return { title: "Producto no encontrado - xyntral" };
   }
 
   return {
@@ -80,10 +107,14 @@ export default async function ProductoDetail({ params }: ProductDetailProps) {
     return notFound();
   }
 
-  const imagenes = [
+  // --- Normalización de imágenes (principal + adicionales + fallback de hasta 6) ---
+  const adicionales = parsePgTextArray(producto.imagenes_adicionales);
+  const fallback = buildFallbackFromSlug(producto.slug, 6);
+
+  const imagenes = unique([
     producto.imagen_url || "/img/placeholder-product.png",
-    ...(producto.imagenes_adicionales || []),
-  ].filter(Boolean);
+    ...(adicionales.length ? adicionales : fallback),
+  ]).filter(Boolean);
 
   const tieneDescuento = !!producto.precio_anterior;
   const porcentajeDescuento = tieneDescuento

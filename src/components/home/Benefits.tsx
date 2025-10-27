@@ -34,30 +34,30 @@ const Benefits = () => {
   const benefits = [
     {
       icon: <Truck className="w-7 h-7" />,
-      title: "Envíos Seguros",
+      title: "Envíos seguros con seguimiento",
       description:
-        "Ofrecemos envíos seguros con Andreani. El producto siempre viene embalado. Las tarifas varían según la distancia y peso.",
+        "Trabajamos con Andreani: embalaje reforzado y entrega puerta a puerta con tracking. La tarifa se calcula según distancia y peso.",
       color: "from-blue-500 to-blue-600",
     },
     {
       icon: <Settings className="w-7 h-7" />,
-      title: "Funcionalidad",
+      title: "Funcionalidad que se nota",
       description:
-        "Nos encargamos de escoger productos que sean útiles y funcionales para el día a día.",
+        "Soportes diseñados para cuidar tu postura, optimizar tu espacio y mejorar tu productividad en el día a día.",
       color: "from-purple-500 to-purple-600",
     },
     {
       icon: <Shield className="w-7 h-7" />,
-      title: "Pagos Seguros",
+      title: "Pagos 100% protegidos",
       description:
-        "Realiza tu compra con total seguridad utilizando Mercado Pago. También aceptamos transferencias bancarias directas.",
+        "Pagá con Mercado Pago (crédito, débito, QR) o transferencia bancaria. Tus datos siempre están protegidos.",
       color: "from-green-500 to-green-600",
     },
     {
       icon: <Gift className="w-7 h-7" />,
-      title: "¡Envío Gratis!",
+      title: "¡Envío GRATIS!",
       description:
-        "Envío TOTALMENTE GRATIS en todo Argentina a partir de la 2da unidad. Ahorrá en tus compras.",
+        "Envío GRATIS a todo el país a partir de 2 unidades. Combiná productos y ahorrá en tus compras.",
       color: "from-orange-500 to-orange-600",
     },
   ];
@@ -71,10 +71,12 @@ const Benefits = () => {
         {/* Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">
-            ¿Por qué elegir xyntral?
+            ¿Por qué elegir Xyntral?
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Hacemos la vida más fácil con tecnología útil, funcional y confiable
+            Hacemos que la tecnología trabaje a tu favor. Soportes diseñados
+            para cuidar tu postura, optimizar tu espacio y hacer tu rutina más
+            fácil.
           </p>
         </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
 
@@ -9,17 +9,37 @@ interface Props {
   nombre: string;
 }
 
-const ProductGallery = ({ imagenes, nombre }: Props) => {
+const ProductGallery = ({ imagenes: rawImagenes, nombre }: Props) => {
+  // Guardas básicas
+  const fallback = ["/img/placeholder-product.png"];
+  const imagenes = (
+    rawImagenes?.filter(Boolean)?.length ? rawImagenes : fallback
+  ).map(String);
+
   const [imagenActual, setImagenActual] = useState(0);
   const [showLightbox, setShowLightbox] = useState(false);
 
-  const siguiente = () => {
-    setImagenActual((prev) => (prev + 1) % imagenes.length);
-  };
+  const siguiente = useCallback(
+    () => setImagenActual((prev) => (prev + 1) % imagenes.length),
+    [imagenes.length]
+  );
+  const anterior = useCallback(
+    () =>
+      setImagenActual((prev) => (prev - 1 + imagenes.length) % imagenes.length),
+    [imagenes.length]
+  );
 
-  const anterior = () => {
-    setImagenActual((prev) => (prev - 1 + imagenes.length) % imagenes.length);
-  };
+  // Navegación por teclado en lightbox
+  useEffect(() => {
+    if (!showLightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") siguiente();
+      if (e.key === "ArrowLeft") anterior();
+      if (e.key === "Escape") setShowLightbox(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showLightbox, siguiente, anterior]);
 
   return (
     <>
@@ -31,9 +51,9 @@ const ProductGallery = ({ imagenes, nombre }: Props) => {
             src={imagenes[imagenActual]}
             alt={`${nombre} - Imagen ${imagenActual + 1}`}
             fill
-            className="object-cover"
+            className="object-contain"
             sizes="(max-width: 1024px) 100vw, 50vw"
-            priority
+            priority={imagenActual === 0}
           />
 
           {/* Botones navegación */}
@@ -66,7 +86,7 @@ const ProductGallery = ({ imagenes, nombre }: Props) => {
             <Maximize2 size={18} className="text-gray-900" />
           </button>
 
-          {/* Indicador de imagen actual */}
+          {/* Indicador */}
           {imagenes.length > 1 && (
             <div className="absolute bottom-3 left-3 px-3 py-1.5 bg-black/60 backdrop-blur-sm text-white text-sm font-medium rounded-full">
               {imagenActual + 1} / {imagenes.length}
@@ -74,25 +94,30 @@ const ProductGallery = ({ imagenes, nombre }: Props) => {
           )}
         </div>
 
-        {/* Miniaturas */}
+        {/* Miniaturas: carrusel horizontal con snap */}
         {imagenes.length > 1 && (
-          <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+          <div className="flex items-center gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
             {imagenes.map((imagen, index) => (
               <button
                 key={index}
                 onClick={() => setImagenActual(index)}
-                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                  index === imagenActual
-                    ? "border-blue-600 ring-2 ring-blue-200"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
+                className={`relative rounded-lg overflow-hidden border-2 transition-all snap-start
+                  ${
+                    index === imagenActual
+                      ? "border-blue-600 ring-2 ring-blue-200"
+                      : "border-gray-200 hover:border-gray-300"
+                  }
+                `}
+                style={{ minWidth: 80, width: 80, height: 80 }}
+                aria-label={`Ver imagen ${index + 1}`}
               >
                 <Image
                   src={imagen}
                   alt={`${nombre} - Miniatura ${index + 1}`}
                   fill
-                  className="object-cover"
-                  sizes="120px"
+                  className="object-contain bg-white"
+                  sizes="80px"
+                  loading="lazy"
                 />
               </button>
             ))}
@@ -103,7 +128,7 @@ const ProductGallery = ({ imagenes, nombre }: Props) => {
       {/* Lightbox */}
       {showLightbox && (
         <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4">
-          {/* Botón cerrar */}
+          {/* Cerrar */}
           <button
             onClick={() => setShowLightbox(false)}
             className="absolute top-4 right-4 w-12 h-12 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/20 transition-colors z-10"
@@ -141,6 +166,7 @@ const ProductGallery = ({ imagenes, nombre }: Props) => {
               fill
               className="object-contain"
               sizes="100vw"
+              priority
             />
           </div>
 

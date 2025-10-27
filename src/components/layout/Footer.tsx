@@ -144,41 +144,44 @@ const Footer = () => {
           {/* Contacto */}
           <div className="text-center sm:text-left sm:col-span-2 lg:col-span-1">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Contacto</h3>
-            <div className="space-y-4 flex flex-col items-center sm:items-start">
-              <a
-                href="https://wa.me/5491168896621?text=Hola! Quiero consultar sobre los productos de xyntral"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 text-gray-600 hover:text-green-600 transition-colors duration-200 group"
-              >
-                <div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                  <Phone size={18} className="text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-gray-900">
-                    WhatsApp
-                  </p>
-                  <p className="text-xs text-gray-500">+54 9 11 6889-6621</p>
-                </div>
-              </a>
+            <div className="space-y-4 flex flex-col items-center">
+              {/* Contacto */}
+              <div className="space-y-3 flex flex-col items-center">
+                <a
+                  href="https://wa.me/5491168896621?text=Hola! Quiero consultar sobre los productos de xyntral"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 text-gray-600 hover:text-green-600 transition-colors duration-200 group"
+                >
+                  <div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                    <Phone size={18} className="text-white" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-gray-900">
+                      WhatsApp
+                    </p>
+                    <p className="text-xs text-gray-500">+54 9 11 6889-6621</p>
+                  </div>
+                </a>
 
-              <a
-                href="mailto:xyntral.tech.ar@gmail.com"
-                className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors duration-200 group"
-              >
-                <div className="w-11 h-11 bg-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                  <Mail size={18} className="text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-gray-900">Email</p>
-                  <p className="text-xs text-gray-500">
-                    xyntral.tech.ar@gmail.com
-                  </p>
-                </div>
-              </a>
+                <a
+                  href="mailto:xyntral.tech.ar@gmail.com"
+                  className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors duration-200 group"
+                >
+                  <div className="w-11 h-11 bg-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                    <Mail size={18} className="text-white" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-gray-900">Email</p>
+                    <p className="text-xs text-gray-500">
+                      xyntral.tech.ar@gmail.com
+                    </p>
+                  </div>
+                </a>
+              </div>
 
               {/* Horarios */}
-              <div className="pt-4 border-t border-gray-200 w-full">
+              <div className="pt-4 border-t border-gray-200 w-full text-center">
                 <p className="text-xs font-semibold text-gray-900 mb-2">
                   Horarios de Atención
                 </p>

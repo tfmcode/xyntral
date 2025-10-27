@@ -69,14 +69,14 @@ const Hero = () => {
               ref={subtitleRef}
               className="text-lg sm:text-xl text-gray-600 mb-8 max-w-xl mx-auto lg:mx-0"
             >
-              Tecnología útil y funcional para tu día a día. Soportes de calidad
-              para celulares, tablets y notebooks que realmente hacen la
-              diferencia.
+              Tecnología útil y funcional para acompañarte cada día. Soportes
+              ergonómicos y accesorios de calidad para notebooks, tablets y
+              celulares que mejoran tu comodidad y tu espacio de trabajo.
             </p>
 
             <div
               ref={ctaRef}
-              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+              className="flex flex-col sm:flex-row gap-4 justify-center"
             >
               <Link
                 href="/productos"
@@ -86,17 +86,10 @@ const Hero = () => {
                 Ver Productos
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-
-              <Link
-                href="/sobre-nosotros"
-                className="inline-flex items-center justify-center gap-2 bg-white text-gray-900 font-semibold px-8 py-4 rounded-full border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md transition-all duration-300"
-              >
-                Conocer más
-              </Link>
             </div>
 
             {/* Confianza */}
-            <div className="mt-10 pt-10 border-t border-gray-200 flex flex-wrap gap-6 justify-center lg:justify-start text-sm text-gray-600">
+            <div className="mt-10 pt-10 border-t border-gray-200 flex flex-wrap gap-6 justify-center text-sm text-gray-600">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full" />
                 <span className="font-medium">
@@ -109,7 +102,6 @@ const Hero = () => {
               </div>
             </div>
           </div>
-
           {/* Derecha: Banner grande, sin recorte */}
           <div ref={imageRef} className="relative">
             <div className="relative mx-auto max-w-2xl w-full aspect-[16/10] rounded-3xl  ring-1 ring-black/5 shadow-2xl overflow-hidden">
@@ -121,12 +113,6 @@ const Hero = () => {
                 sizes="(min-width:1024px) 48rem, 92vw"
                 className="object-contain" // ← no recorta, muestra todo el producto
               />
-              {/* Badge flotante */}
-              <div className="absolute top-3 right-3 bg-white/95 backdrop-blur rounded-xl shadow-lg px-3 py-2">
-                <p className="text-sm font-bold leading-none">
-                  <span className="text-blue-600">10+</span> Productos
-                </p>
-              </div>
             </div>
           </div>
           {/* /Derecha */}

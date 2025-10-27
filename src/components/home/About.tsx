@@ -48,17 +48,17 @@ const About = () => {
     {
       icon: <Target className="w-6 h-6" />,
       title: "Nuestra Misión",
-      text: "Hacer la vida más fácil ofreciendo tecnología útil, funcional y confiable.",
+      text: "Facilitar tu día a día ofreciendo tecnología inteligente, funcional y accesible, diseñada para mejorar tu experiencia en el trabajo, el estudio o el hogar.",
     },
     {
       icon: <Award className="w-6 h-6" />,
       title: "Calidad",
-      text: "Cumplimos con los más altos estándares en cada producto que seleccionamos.",
+      text: "Cumplimos con los más altos estándares en cada producto que seleccionamos, priorizando la durabilidad, el rendimiento y la satisfacción de nuestros clientes.",
     },
     {
       icon: <Users className="w-6 h-6" />,
       title: "Compromiso",
-      text: "Ser una herramienta práctica en tu rutina diaria.",
+      text: "Ser una marca que inspira confianza y forma parte de tu rutina diaria, ofreciendo tecnología que realmente hace la diferencia.",
     },
   ];
 
@@ -75,18 +75,21 @@ const About = () => {
               Sobre Nosotros
             </p>
             <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-6">
-              Tecnología que acompaña tu día a día
+              Tecnología que mejora tu día a día
             </h2>
             <p className="text-lg text-gray-600 leading-relaxed mb-6">
-              xyntral nació con un propósito claro: hacer la vida más fácil.
-              Cada producto que elegimos está pensado para brindar soluciones
-              reales a necesidades cotidianas.
+              En <span className="font-semibold">Xyntral Tech</span> creemos que
+              la tecnología no tiene que ser compleja: debe estar al servicio de
+              las personas. Nacimos con un propósito claro —hacer la vida más
+              fácil— creando productos útiles, funcionales y confiables que
+              simplifican las tareas cotidianas y mejoran tu bienestar.
             </p>
             <p className="text-lg text-gray-600 leading-relaxed">
-              Nuestra misión es ofrecer tecnología útil, funcional y confiable,
-              diseñada para acompañarte en el día a día. Queremos ser una
-              herramienta práctica en tu rutina y cumplir con los más altos
-              estándares de calidad.
+              Cada artículo de nuestro catálogo está cuidadosamente seleccionado
+              para ofrecer soluciones reales a necesidades reales, combinando
+              diseño, calidad y practicidad. Desde accesorios ergonómicos hasta
+              herramientas de productividad, buscamos acompañarte en tu rutina
+              diaria con innovación y confort.
             </p>
           </div>
 
