@@ -115,15 +115,27 @@ const Footer = () => {
             </h3>
             <ul className="space-y-3">
               {[
-                { label: "Sobre Nosotros", href: "#sobre-nosotros" },
+                { label: "Sobre Nosotros", href: "/#sobre-nosotros" },
                 {
                   label: "Preguntas Frecuentes",
-                  href: "#preguntas-frecuentes",
+                  href: "/#preguntas-frecuentes",
                 },
-                { label: "Envíos y Entregas", href: "/" },
-                { label: "Métodos de Pago", href: "/" },
-                { label: "Política de Devoluciones", href: "/" },
-                { label: "Términos y Condiciones", href: "/" },
+                {
+                  label: "Envíos y Entregas",
+                  href: "/politicas-legales#envios",
+                },
+                {
+                  label: "Métodos de Pago",
+                  href: "/politicas-legales#terminos",
+                },
+                {
+                  label: "Política de Devoluciones",
+                  href: "/politicas-legales#cambios",
+                },
+                {
+                  label: "Términos y Condiciones",
+                  href: "/politicas-legales#terminos",
+                },
               ].map((link) => (
                 <li key={link.label}>
                   <Link
@@ -144,44 +156,49 @@ const Footer = () => {
           {/* Contacto */}
           <div className="text-center sm:text-left sm:col-span-2 lg:col-span-1">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Contacto</h3>
-            <div className="space-y-4 flex flex-col items-center">
-              {/* Contacto */}
-              <div className="space-y-3 flex flex-col items-center">
-                <a
-                  href="https://wa.me/5491168896621?text=Hola! Quiero consultar sobre los productos de xyntral"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 text-gray-600 hover:text-green-600 transition-colors duration-200 group"
-                >
-                  <div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                    <Phone size={18} className="text-white" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-gray-900">
-                      WhatsApp
-                    </p>
-                    <p className="text-xs text-gray-500">+54 9 11 6889-6621</p>
-                  </div>
-                </a>
 
-                <a
-                  href="mailto:xyntral.tech.ar@gmail.com"
-                  className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors duration-200 group"
-                >
-                  <div className="w-11 h-11 bg-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
-                    <Mail size={18} className="text-white" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-gray-900">Email</p>
-                    <p className="text-xs text-gray-500">
-                      xyntral.tech.ar@gmail.com
-                    </p>
-                  </div>
-                </a>
-              </div>
+            {/* Contenedor de contactos - Siempre alineado a la izquierda */}
+            <div className="flex flex-col items-start space-y-3 mx-auto sm:mx-0 max-w-xs sm:max-w-none">
+              {/* WhatsApp */}
+              <a
+                href="https://wa.me/5491168896621?text=Hola! Quiero consultar sobre los productos de xyntral"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 text-gray-600 hover:text-green-600 transition-colors duration-200 group"
+              >
+                <div className="w-11 h-11 flex-shrink-0 bg-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                  <Phone size={18} className="text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+                    WhatsApp
+                  </p>
+                  <p className="text-xs text-gray-500 whitespace-nowrap">
+                    +54 9 11 6889-6621
+                  </p>
+                </div>
+              </a>
+
+              {/* Email */}
+              <a
+                href="mailto:xyntral.tech.ar@gmail.com"
+                className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors duration-200 group"
+              >
+                <div className="w-11 h-11 flex-shrink-0 bg-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
+                  <Mail size={18} className="text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-gray-900 whitespace-nowrap">
+                    Email
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    xyntral.tech.ar@gmail.com
+                  </p>
+                </div>
+              </a>
 
               {/* Horarios */}
-              <div className="pt-4 border-t border-gray-200 w-full text-center">
+              <div className="pt-4 mt-2 border-t border-gray-200 w-full text-left">
                 <p className="text-xs font-semibold text-gray-900 mb-2">
                   Horarios de Atención
                 </p>
@@ -266,11 +283,17 @@ const Footer = () => {
               © {currentYear} xyntral. Todos los derechos reservados.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-              <Link href="/" className="hover:text-blue-600 transition-colors">
+              <Link
+                href="/politicas-legales#terminos"
+                className="hover:text-blue-600 transition-colors"
+              >
                 Términos
               </Link>
               <span className="hidden sm:inline">•</span>
-              <Link href="/" className="hover:text-blue-600 transition-colors">
+              <Link
+                href="/politicas-legales#privacidad"
+                className="hover:text-blue-600 transition-colors"
+              >
                 Privacidad
               </Link>
               <span className="hidden sm:inline">•</span>
