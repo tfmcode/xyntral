@@ -157,14 +157,14 @@ const Footer = () => {
           <div className="text-center sm:text-left sm:col-span-2 lg:col-span-1">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Contacto</h3>
 
-            {/* Contenedor de contactos - Siempre alineado a la izquierda */}
-            <div className="flex flex-col items-start space-y-3 mx-auto sm:mx-0 max-w-xs sm:max-w-none">
+            {/* Contenedor de contactos */}
+            <div className="flex flex-col items-center sm:items-start space-y-3 px-[15%] sm:px-0">
               {/* WhatsApp */}
               <a
                 href="https://wa.me/5491168896621?text=Hola! Quiero consultar sobre los productos de xyntral"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 text-gray-600 hover:text-green-600 transition-colors duration-200 group"
+                className="flex items-center gap-3 text-gray-600 hover:text-green-600 transition-colors duration-200 group w-full sm:w-fit"
               >
                 <div className="w-11 h-11 flex-shrink-0 bg-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
                   <Phone size={18} className="text-white" />
@@ -182,7 +182,7 @@ const Footer = () => {
               {/* Email */}
               <a
                 href="mailto:xyntral.tech.ar@gmail.com"
-                className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors duration-200 group"
+                className="flex items-center gap-3 text-gray-600 hover:text-blue-600 transition-colors duration-200 group w-full sm:w-fit"
               >
                 <div className="w-11 h-11 flex-shrink-0 bg-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-md">
                   <Mail size={18} className="text-white" />
@@ -198,7 +198,7 @@ const Footer = () => {
               </a>
 
               {/* Horarios */}
-              <div className="pt-4 mt-2 border-t border-gray-200 w-full text-left">
+              <div className="pt-4 mt-2 border-t border-gray-200 w-full flex flex-col items-center sm:items-start text-center sm:text-left">
                 <p className="text-xs font-semibold text-gray-900 mb-2">
                   Horarios de Atención
                 </p>
